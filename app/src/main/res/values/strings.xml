@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CyberPOS</string>
+    <string name="tagline">Lightning Payments para tu negocio</string>
+    <string name="badge_sv">🇸🇻 Hecho en El Salvador</string>
+    <string name="forgot_password">¿Olvidaste tu contraseña?</string>
+    <string name="forgot_password_sent">Correo de recuperación enviado</string>
+    <string name="forgot_password_enter_email">Ingresa tu correo primero</string>
+
+    <!-- Login screen -->
+    <string name="hint_email">Email</string>
+    <string name="hint_password">Contraseña</string>
+    <string name="btn_login">Ingresar</string>
+    <string name="login_failed">Error al iniciar sesión: %1$s</string>
+    <string name="error_email_required">Ingresa tu correo</string>
+    <string name="error_password_length">La contraseña debe tener al menos 6 caracteres</string>
+    <string name="link_create_account">¿No tienes cuenta? Crear cuenta</string>
+
+    <!-- Register screen -->
+    <string name="register_subtitle">Crea tu cuenta</string>
+    <string name="register_role_prompt">¿Cómo usarás CyberPOS?</string>
+    <string name="role_merchant">🏪 Soy un negocio</string>
+    <string name="role_customer">👤 Soy un cliente</string>
+    <string name="hint_business_name">Nombre del negocio</string>
+    <string name="hint_full_name">Nombre completo</string>
+    <string name="hint_confirm_password">Confirmar contraseña</string>
+    <string name="btn_create_account">Crear cuenta</string>
+    <string name="link_have_account">¿Ya tienes cuenta? Ingresar</string>
+    <string name="register_failed">Error al registrarse: %1$s</string>
+    <string name="register_success">¡Bienvenido a CyberPOS!</string>
+    <string name="error_business_name_required">Ingresa el nombre del negocio</string>
+    <string name="error_full_name_required">Ingresa tu nombre completo</string>
+    <string name="error_passwords_dont_match">Las contraseñas no coinciden</string>
+
+    <!-- Home screen (customer) -->
+    <string name="btn_scan_qr">⚡ Escanear QR</string>
+    <string name="scan_coming_soon">Función próximamente disponible</string>
+
+    <!-- Main screen -->
+    <string name="welcome_user">Hola, %1$s</string>
+    <string name="welcome_default">Bienvenido</string>
+    <string name="btn_new_payment">⚡ Nuevo Cobro</string>
+    <string name="btn_logout">Cerrar sesión</string>
+    <string name="logged_out">Sesión cerrada</string>
+
+    <!-- Payment screen -->
+    <string name="title_new_payment">Nuevo Cobro</string>
+    <string name="hint_amount">Monto (USD)</string>
+    <string name="hint_description">Descripción (opcional)</string>
+    <string name="btn_generate_qr">Generar QR Lightning</string>
+    <string name="cd_qr_code">Código QR de pago Lightning</string>
+    <string name="qr_instructions">Muestra este QR al cliente\npara recibir el pago en Bitcoin</string>
+    <string name="error_amount_required">Ingresa el monto</string>
+    <string name="error_amount_invalid">Ingresa un monto válido mayor a 0</string>
+    <string name="error_qr_generation">Error al generar el QR</string>
+    <string name="error_save_payment">Error al guardar el pago</string>
+</resources>

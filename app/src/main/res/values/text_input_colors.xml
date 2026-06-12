@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Color state lists referenced in themes.xml -->
+    <!-- These are inline definitions; alternatively use res/color/ selector files -->
+</resources>

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "98142597704",
+    "project_id": "cyberpos-4159c",
+    "storage_bucket": "cyberpos-4159c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:98142597704:android:442e394771e4252f309e7d",
+        "android_client_info": {
+          "package_name": "com.cyberpos.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA1FtO7dZenHEcIkc42tcxpJ1kORrY2tgk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

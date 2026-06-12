@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand palette -->
+    <color name="neon_green">#39FF14</color>
+    <color name="neon_green_dark">#28CC0F</color>
+    <color name="neon_green_alpha30">#4D39FF14</color>
+
+    <!-- Backgrounds -->
+    <color name="background">#0A0A0A</color>
+    <color name="surface">#141414</color>
+    <color name="surface_variant">#1E1E1E</color>
+
+    <!-- Text -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#9E9E9E</color>
+    <color name="text_on_neon">#0A0A0A</color>
+
+    <!-- Status -->
+    <color name="error">#FF5252</color>
+    <color name="error_container">#3D1010</color>
+
+    <!-- Material theme mappings -->
+    <color name="colorPrimary">@color/neon_green</color>
+    <color name="colorPrimaryVariant">@color/neon_green_dark</color>
+    <color name="colorOnPrimary">@color/text_on_neon</color>
+    <color name="colorSecondary">@color/neon_green</color>
+    <color name="colorOnSecondary">@color/text_on_neon</color>
+    <color name="colorBackground">@color/background</color>
+    <color name="colorSurface">@color/surface</color>
+    <color name="colorOnBackground">@color/text_primary</color>
+    <color name="colorOnSurface">@color/text_primary</color>
+    <color name="colorError">@color/error</color>
+    <color name="colorOnError">#FFFFFF</color>
+</resources>
