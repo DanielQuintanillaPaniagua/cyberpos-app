@@ -43,6 +43,35 @@
     <string name="btn_logout">Cerrar sesión</string>
     <string name="logged_out">Sesión cerrada</string>
 
+    <!-- Customer Home screen -->
+    <string name="label_lightning_payments">Lightning Payments</string>
+    <string name="label_pay_store">PAGAR A TIENDA</string>
+    <string name="label_bitcoin_lightning">Bitcoin Lightning</string>
+    <string name="tab_scan_qr">ESCANEAR QR</string>
+    <string name="tab_enter_amount">INGRESAR MONTO</string>
+    <string name="label_lightning_network">⚡ Lightning Network</string>
+    <string name="label_my_wallet">MI BILLETERA</string>
+    <string name="label_estimated_fee">COMISIÓN ESTIMADA</string>
+    <string name="label_estimated_time">TIEMPO ESTIMADO</string>
+    <string name="label_network">RED</string>
+    <string name="value_fee">~1 sat ($0.00)</string>
+    <string name="value_time">~3 segundos</string>
+    <string name="value_network">⚡ Lightning</string>
+    <string name="btn_pay_now">⚡ PAGAR AHORA</string>
+    <string name="nav_pay">Pagar</string>
+    <string name="nav_history">Historial</string>
+    <string name="nav_settings">Ajustes</string>
+    <string name="coming_soon">Próximamente</string>
+    <string name="processing_payment">Procesando pago…</string>
+    <string name="hint_btc_amount">Monto en BTC</string>
+    <string name="label_btc_amount">0.00021000</string>
+    <string name="label_usd_equivalent">≈ $12.50 USD</string>
+    <string name="label_wallet_btc">₿ 0.00150000</string>
+    <string name="label_wallet_usd">≈ $89.25 USD</string>
+    <string name="label_camera_permission">Permiso de cámara\nrequerido</string>
+    <string name="format_usd_equivalent">≈ $%.2f USD</string>
+    <string name="invoice_scanned">Factura: %1$s…</string>
+
     <!-- Payment screen -->
     <string name="title_new_payment">Nuevo Cobro</string>
     <string name="hint_amount">Monto (USD)</string>

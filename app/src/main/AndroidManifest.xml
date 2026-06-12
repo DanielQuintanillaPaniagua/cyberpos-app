@@ -44,6 +44,12 @@
             android:exported="false"
             android:screenOrientation="portrait" />
 
+        <activity
+            android:name=".CustomerHomeActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize" />
+
     </application>
 
 </manifest>

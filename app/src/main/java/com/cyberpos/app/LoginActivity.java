@@ -59,7 +59,7 @@ public class LoginActivity extends AppCompatActivity {
         db.collection("users").document(uid).get()
                 .addOnSuccessListener(doc -> {
                     String role = doc.exists() ? doc.getString("role") : null;
-                    Class<?> dest = "customer".equals(role) ? HomeActivity.class : MainActivity.class;
+                    Class<?> dest = "customer".equals(role) ? CustomerHomeActivity.class : MainActivity.class;
                     Intent intent = new Intent(this, dest);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(intent);

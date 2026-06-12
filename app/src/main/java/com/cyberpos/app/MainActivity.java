@@ -2,20 +2,19 @@ package com.cyberpos.app;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.cyberpos.app.databinding.ActivityMainBinding;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
     private FirebaseAuth auth;
+    private FirebaseFirestore db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,11 +23,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         auth = FirebaseAuth.getInstance();
-
-        binding.btnNewPayment.setOnClickListener(v -> {
-            Intent intent = new Intent(this, PaymentActivity.class);
-            startActivity(intent);
-        });
+        db = FirebaseFirestore.getInstance();
 
         binding.btnLogout.setOnClickListener(v -> logout());
     }
@@ -36,12 +31,33 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        FirebaseUser currentUser = auth.getCurrentUser();
-        if (currentUser == null) {
+        if (auth.getCurrentUser() == null) {
             redirectToLogin();
-        } else {
-            binding.tvWelcome.setText(getString(R.string.welcome_user, currentUser.getEmail()));
+            return;
         }
+        routeByRole();
+    }
+
+    private void routeByRole() {
+        String uid = auth.getCurrentUser().getUid();
+        db.collection("users").document(uid).get()
+                .addOnSuccessListener(doc -> {
+                    String role = doc.exists() ? doc.getString("role") : null;
+                    Class<?> dest;
+                    if ("customer".equals(role)) {
+                        dest = CustomerHomeActivity.class;
+                    } else {
+                        dest = PaymentActivity.class;
+                    }
+                    Intent intent = new Intent(this, dest);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                    finish();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, getString(R.string.login_failed, e.getMessage()), Toast.LENGTH_SHORT).show();
+                    redirectToLogin();
+                });
     }
 
     private void redirectToLogin() {
