@@ -1,6 +1,7 @@
 package com.cyberpos.app;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.text.Editable;
@@ -84,8 +85,12 @@ public class CustomerHomeActivity extends AppCompatActivity {
         binding.bottomNav.setSelectedItemId(R.id.nav_pay);
         binding.bottomNav.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
-            if (id == R.id.nav_history || id == R.id.nav_settings) {
-                Toast.makeText(this, R.string.coming_soon, Toast.LENGTH_SHORT).show();
+            if (id == R.id.nav_history) {
+                startActivity(new Intent(this, HistorialActivity.class)
+                        .setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));
+            } else if (id == R.id.nav_settings) {
+                startActivity(new Intent(this, AjustesActivity.class)
+                        .setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));
             }
             return true;
         });

@@ -72,6 +72,30 @@
     <string name="format_usd_equivalent">≈ $%.2f USD</string>
     <string name="invoice_scanned">Factura: %1$s…</string>
 
+    <!-- HistorialActivity -->
+    <string name="title_historial">HISTORIAL</string>
+    <string name="subtitle_historial">Tus pagos Lightning</string>
+    <string name="label_total_paid">TOTAL PAGADO</string>
+    <string name="label_transactions">TRANSACCIONES</string>
+    <string name="label_this_month">este mes</string>
+
+    <!-- AjustesActivity -->
+    <string name="title_ajustes">AJUSTES</string>
+    <string name="label_role_customer">Cliente</string>
+    <string name="section_account">CUENTA</string>
+    <string name="section_security">SEGURIDAD</string>
+    <string name="section_app">APLICACIÓN</string>
+    <string name="settings_profile">Perfil</string>
+    <string name="settings_currency">Moneda</string>
+    <string name="settings_pin">PIN de seguridad</string>
+    <string name="settings_biometrics">Biometría</string>
+    <string name="settings_notifications">Notificaciones</string>
+    <string name="settings_language">Idioma</string>
+    <string name="settings_version">Versión</string>
+    <string name="value_version">1.0.0</string>
+    <string name="value_currency">BTC / USD</string>
+    <string name="value_language">Español</string>
+
     <!-- Payment screen -->
     <string name="title_new_payment">Nuevo Cobro</string>
     <string name="hint_amount">Monto (USD)</string>
