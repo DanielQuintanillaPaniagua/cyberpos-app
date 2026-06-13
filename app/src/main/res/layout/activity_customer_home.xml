@@ -151,6 +151,20 @@
                 android:textColor="@color/text_secondary"
                 android:textSize="14sp" />
 
+            <!-- Live BTC price chip -->
+            <TextView
+                android:id="@+id/tvLivePrice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/bg_badge"
+                android:fontFamily="monospace"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="3dp"
+                android:text="@string/label_price_loading"
+                android:textColor="@color/text_secondary"
+                android:textSize="10sp" />
+
             <!-- Tab toggle: ESCANEAR QR / INGRESAR MONTO -->
             <com.google.android.material.button.MaterialButtonToggleGroup
                 android:id="@+id/toggleGroup"

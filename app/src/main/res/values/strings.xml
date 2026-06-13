@@ -96,6 +96,38 @@
     <string name="value_currency">BTC / USD</string>
     <string name="value_language">Español</string>
 
+    <!-- Live BTC price -->
+    <string name="label_btc_price">PRECIO BTC</string>
+    <string name="label_price_loading">Cargando…</string>
+    <string name="label_price_live">● LIVE</string>
+
+    <!-- Merchant bottom nav -->
+    <string name="nav_cobros">Cobros</string>
+
+    <!-- PaymentActivity screen header -->
+    <string name="title_cobros">COBROS</string>
+    <string name="subtitle_cobros">Genera tu QR Lightning</string>
+
+    <!-- MerchantHistorialActivity -->
+    <string name="subtitle_merchant_historial">Pagos recibidos</string>
+    <string name="label_total_received">TOTAL RECIBIDO</string>
+
+    <!-- MerchantAjustesActivity -->
+    <string name="label_role_merchant">Comerciante</string>
+    <string name="section_my_business">MI NEGOCIO</string>
+    <string name="settings_business_info">Información del negocio</string>
+    <string name="settings_bank_accounts">Cuentas bancarias</string>
+    <string name="settings_taxes">Impuestos y fiscalidad</string>
+    <string name="section_preferences">PREFERENCIAS</string>
+    <string name="settings_payment_screen">Pantalla de cobro</string>
+    <string name="settings_confirmations">Confirmaciones</string>
+    <string name="settings_2fa">Autenticación 2FA</string>
+    <string name="settings_linked_devices">Dispositivos vinculados</string>
+    <string name="section_support">SOPORTE</string>
+    <string name="settings_help">Ayuda</string>
+    <string name="settings_contact">Contacto</string>
+    <string name="settings_about">Acerca de</string>
+
     <!-- Payment screen -->
     <string name="title_new_payment">Nuevo Cobro</string>
     <string name="hint_amount">Monto (USD)</string>

@@ -1,8 +1,11 @@
 package com.cyberpos.app;
 
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.view.View;
 import android.widget.Toast;
 
@@ -17,6 +20,7 @@ import com.google.zxing.WriterException;
 import com.journeyapps.barcodescanner.BarcodeEncoder;
 
 import java.util.Date;
+import java.util.Locale;
 
 public class PaymentActivity extends AppCompatActivity {
 
@@ -25,6 +29,14 @@ public class PaymentActivity extends AppCompatActivity {
     private ActivityPaymentBinding binding;
     private FirebaseFirestore db;
     private FirebaseAuth auth;
+    private double btcUsdRate = 0;
+
+    private final PriceService.Listener priceListener = price -> {
+        btcUsdRate = price;
+        binding.tvLivePrice.setText(
+                String.format(Locale.US, "$%,.0f USD", price));
+        updateBtcEquivalent();
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,12 +47,58 @@ public class PaymentActivity extends AppCompatActivity {
         db = FirebaseFirestore.getInstance();
         auth = FirebaseAuth.getInstance();
 
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setTitle(R.string.title_new_payment);
-        }
-
         binding.btnGenerateQr.setOnClickListener(v -> generatePayment());
+        binding.etAmount.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int i, int i1, int i2) {}
+            @Override public void onTextChanged(CharSequence s, int i, int i1, int i2) {}
+            @Override public void afterTextChanged(Editable s) { updateBtcEquivalent(); }
+        });
+        setupBottomNav();
+    }
+
+    private void updateBtcEquivalent() {
+        String raw = binding.etAmount.getText() != null
+                ? binding.etAmount.getText().toString().trim() : "";
+        if (raw.isEmpty() || btcUsdRate <= 0) {
+            binding.tvBtcEquivalent.setText("≈ — BTC");
+            return;
+        }
+        try {
+            double usd = Double.parseDouble(raw);
+            double btc = usd / btcUsdRate;
+            binding.tvBtcEquivalent.setText(
+                    String.format(Locale.US, "≈ %.8f BTC", btc));
+        } catch (NumberFormatException e) {
+            binding.tvBtcEquivalent.setText("≈ — BTC");
+        }
+    }
+
+    private void setupBottomNav() {
+        binding.bottomNav.setOnItemSelectedListener(item -> {
+            int id = item.getItemId();
+            if (id == R.id.nav_merchant_history) {
+                startActivity(new Intent(this, MerchantHistorialActivity.class)
+                        .setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));
+            } else if (id == R.id.nav_merchant_settings) {
+                startActivity(new Intent(this, MerchantAjustesActivity.class)
+                        .setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));
+            }
+            return true;
+        });
+        binding.bottomNav.setSelectedItemId(R.id.nav_cobros);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        binding.bottomNav.setSelectedItemId(R.id.nav_cobros);
+        PriceService.get().addListener(priceListener);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        PriceService.get().removeListener(priceListener);
     }
 
     private void generatePayment() {
@@ -64,19 +122,18 @@ public class PaymentActivity extends AppCompatActivity {
 
         setLoading(true);
 
-        // Build a Lightning invoice URI (BOLT11 placeholder — replace with real BTCPay Server call)
         String lightningUri = buildLightningUri(amount, description);
-
         generateQrCode(lightningUri);
         savePaymentToFirestore(amount, description, lightningUri);
     }
 
-    private String buildLightningUri(double amount, String description) {
-        // TODO: Integrate with BTCPay Server API to generate a real BOLT11 invoice
-        // Format: lightning:<BOLT11_INVOICE>
-        // For now returns a placeholder URI for UI development
+    private String buildLightningUri(double usdAmount, String description) {
+        // Convert USD to satoshis using live rate when available
+        long satoshis = btcUsdRate > 0
+                ? Math.round((usdAmount / btcUsdRate) * 100_000_000L)
+                : Math.round(usdAmount * 100);
         String safeDesc = description.isEmpty() ? "payment" : description.replace(" ", "%20");
-        return "lightning:lnbc" + (long)(amount * 100) + "n1placeholder_" + safeDesc;
+        return "lightning:lnbc" + satoshis + "u1placeholder_" + safeDesc;
     }
 
     private void generateQrCode(String content) {
@@ -99,23 +156,13 @@ public class PaymentActivity extends AppCompatActivity {
 
         db.collection("payments")
                 .add(payment)
-                .addOnSuccessListener(ref -> {
-                    // Payment saved — no UI action needed
-                })
-                .addOnFailureListener(e -> {
-                    // Non-critical: QR is already shown; log silently
-                    Toast.makeText(this, R.string.error_save_payment, Toast.LENGTH_SHORT).show();
-                });
+                .addOnSuccessListener(ref -> {})
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, R.string.error_save_payment, Toast.LENGTH_SHORT).show());
     }
 
     private void setLoading(boolean loading) {
         binding.btnGenerateQr.setEnabled(!loading);
         binding.progressBar.setVisibility(loading ? View.VISIBLE : View.GONE);
-    }
-
-    @Override
-    public boolean onSupportNavigateUp() {
-        finish();
-        return true;
     }
 }

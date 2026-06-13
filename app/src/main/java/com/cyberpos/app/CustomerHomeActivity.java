@@ -19,14 +19,26 @@ import com.journeyapps.barcodescanner.BarcodeCallback;
 import com.journeyapps.barcodescanner.BarcodeResult;
 
 import java.util.List;
+import java.util.Locale;
 
 public class CustomerHomeActivity extends AppCompatActivity {
 
     private static final int CAMERA_PERMISSION_REQUEST = 101;
-    private static final double BTC_USD_RATE = 59500.0;
+    private static final double WALLET_BTC = 0.00150000;
 
     private ActivityCustomerHomeBinding binding;
     private boolean scannerResumed = false;
+    private double btcUsdRate = 0;
+
+    private final PriceService.Listener priceListener = price -> {
+        btcUsdRate = price;
+        binding.tvLivePrice.setText(
+                String.format(Locale.US, "1 BTC = $%,.0f  ● LIVE", price));
+        binding.tvLivePrice.setTextColor(getColor(R.color.neon_green));
+        binding.tvWalletUsd.setText(
+                String.format(Locale.US, "≈ $%.2f USD", WALLET_BTC * price));
+        refreshAmountUsd();
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,22 +70,34 @@ public class CustomerHomeActivity extends AppCompatActivity {
 
     private void setupAmountInput() {
         binding.etBtcAmount.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
-
+            @Override public void beforeTextChanged(CharSequence s, int i, int i1, int i2) {}
+            @Override public void onTextChanged(CharSequence s, int i, int i1, int i2) {}
             @Override
             public void afterTextChanged(Editable s) {
-                try {
-                    double btc = Double.parseDouble(s.toString());
-                    double usd = btc * BTC_USD_RATE;
-                    binding.tvAmountUsd.setText(getString(R.string.format_usd_equivalent, usd));
-                    binding.tvBtcAmount.setText(s.toString());
-                    binding.tvUsdEquivalent.setText(getString(R.string.format_usd_equivalent, usd));
-                } catch (NumberFormatException e) {
-                    binding.tvAmountUsd.setText(R.string.label_usd_equivalent);
-                }
+                String raw = s.toString();
+                binding.tvBtcAmount.setText(raw.isEmpty() ? getString(R.string.label_btc_amount) : raw);
+                refreshAmountUsd();
             }
         });
+    }
+
+    private void refreshAmountUsd() {
+        String raw = binding.etBtcAmount.getText() != null
+                ? binding.etBtcAmount.getText().toString().trim() : "";
+        if (raw.isEmpty() || btcUsdRate <= 0) {
+            binding.tvAmountUsd.setText(R.string.label_usd_equivalent);
+            binding.tvUsdEquivalent.setText(R.string.label_usd_equivalent);
+            return;
+        }
+        try {
+            double btc = Double.parseDouble(raw);
+            double usd = btc * btcUsdRate;
+            String formatted = getString(R.string.format_usd_equivalent, usd);
+            binding.tvAmountUsd.setText(formatted);
+            binding.tvUsdEquivalent.setText(formatted);
+        } catch (NumberFormatException e) {
+            binding.tvAmountUsd.setText(R.string.label_usd_equivalent);
+        }
     }
 
     private void setupPayButton() {
@@ -82,7 +106,6 @@ public class CustomerHomeActivity extends AppCompatActivity {
     }
 
     private void setupBottomNav() {
-        binding.bottomNav.setSelectedItemId(R.id.nav_pay);
         binding.bottomNav.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
             if (id == R.id.nav_history) {
@@ -94,6 +117,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
             }
             return true;
         });
+        binding.bottomNav.setSelectedItemId(R.id.nav_pay);
     }
 
     private void requestCameraIfNeeded() {
@@ -126,9 +150,11 @@ public class CustomerHomeActivity extends AppCompatActivity {
     }
 
     private void handleScannedInvoice(String invoice) {
-        // TODO: Decode BOLT11 invoice and populate BTC/USD amounts
         binding.tvBtcAmount.setText(getString(R.string.label_btc_amount));
-        Toast.makeText(this, getString(R.string.invoice_scanned, invoice.substring(0, Math.min(20, invoice.length()))), Toast.LENGTH_SHORT).show();
+        Toast.makeText(this,
+                getString(R.string.invoice_scanned,
+                        invoice.substring(0, Math.min(20, invoice.length()))),
+                Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -162,14 +188,17 @@ public class CustomerHomeActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        binding.bottomNav.setSelectedItemId(R.id.nav_pay);
         if (binding.layoutScan.getVisibility() == View.VISIBLE) {
             resumeScannerIfPermitted();
         }
+        PriceService.get().addListener(priceListener);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         pauseScanner();
+        PriceService.get().removeListener(priceListener);
     }
 }
