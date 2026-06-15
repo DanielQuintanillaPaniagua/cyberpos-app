@@ -68,7 +68,7 @@
     <string name="label_usd_equivalent">≈ $12.50 USD</string>
     <string name="label_wallet_btc">₿ 0.00150000</string>
     <string name="label_wallet_usd">≈ $89.25 USD</string>
-    <string name="label_camera_permission">Permiso de cámara\nrequerido</string>
+    <string name="label_camera_permission">Cámara requerida</string>
     <string name="format_usd_equivalent">≈ $%.2f USD</string>
     <string name="invoice_scanned">Factura: %1$s…</string>
 
@@ -95,6 +95,14 @@
     <string name="value_version">1.0.0</string>
     <string name="value_currency">BTC / USD</string>
     <string name="value_language">Español</string>
+
+    <!-- QR scanner -->
+    <string name="msg_camera_needed">Necesaria para escanear facturas Lightning de los comercios</string>
+    <string name="btn_open_settings">Abrir Ajustes</string>
+    <string name="label_invoice_valid">✓ FACTURA VÁLIDA</string>
+    <string name="btn_scan_again">Escanear otra</string>
+    <string name="error_invalid_invoice">Código QR no reconocido como factura Lightning</string>
+    <string name="error_invoice_no_amount">Factura de monto variable</string>
 
     <!-- Live BTC price -->
     <string name="label_btc_price">PRECIO BTC</string>

@@ -244,13 +244,14 @@
                     android:background="@color/surface_variant"
                     android:gravity="center"
                     android:orientation="vertical"
+                    android:padding="16dp"
                     android:visibility="gone">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="📷"
-                        android:textSize="40sp" />
+                        android:textSize="36sp" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -259,11 +260,105 @@
                         android:fontFamily="monospace"
                         android:gravity="center"
                         android:text="@string/label_camera_permission"
+                        android:textColor="@color/text_primary"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:fontFamily="monospace"
+                        android:gravity="center"
+                        android:text="@string/msg_camera_needed"
                         android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
+                        android:textSize="10sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnOpenSettings"
+                        style="@style/Widget.CyberPOS.Button.Outline"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:layout_marginTop="12dp"
+                        android:fontFamily="monospace"
+                        android:paddingHorizontal="16dp"
+                        android:text="@string/btn_open_settings"
+                        android:textSize="11sp" />
                 </LinearLayout>
 
             </FrameLayout>
+
+            <!-- Invoice details panel (shown after successful QR scan, replaces camera area) -->
+            <LinearLayout
+                android:id="@+id/layoutInvoiceDetails"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:background="@drawable/bg_wallet_card"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:fontFamily="monospace"
+                        android:text="@string/label_invoice_valid"
+                        android:textColor="@color/neon_green"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnScanAgain"
+                        style="@style/Widget.CyberPOS.Button.Outline"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:fontFamily="monospace"
+                        android:paddingHorizontal="12dp"
+                        android:text="@string/btn_scan_again"
+                        android:textSize="10sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvInvoiceBtc"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:text="0.00000000 BTC"
+                    android:textColor="@color/neon_green"
+                    android:textSize="26sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvInvoiceUsd"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:fontFamily="monospace"
+                    android:text="≈ $0.00 USD"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/tvInvoiceId"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:ellipsize="middle"
+                    android:fontFamily="monospace"
+                    android:maxLines="1"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="9sp" />
+
+            </LinearLayout>
 
             <!-- Manual amount entry (shown when tabAmount is selected) -->
             <LinearLayout

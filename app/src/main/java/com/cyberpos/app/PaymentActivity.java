@@ -128,12 +128,13 @@ public class PaymentActivity extends AppCompatActivity {
     }
 
     private String buildLightningUri(double usdAmount, String description) {
-        // Convert USD to satoshis using live rate when available
-        long satoshis = btcUsdRate > 0
-                ? Math.round((usdAmount / btcUsdRate) * 100_000_000L)
-                : Math.round(usdAmount * 100);
+        // Express amount in nano-BTC (n × 1e-9 BTC) — keeps whole numbers for typical amounts
+        // and decodes correctly to the right satoshi value when scanned by the customer app.
+        long nanoBtc = btcUsdRate > 0
+                ? Math.round((usdAmount / btcUsdRate) * 1_000_000_000L)
+                : Math.round(usdAmount * 1_000_000L);
         String safeDesc = description.isEmpty() ? "payment" : description.replace(" ", "%20");
-        return "lightning:lnbc" + satoshis + "u1placeholder_" + safeDesc;
+        return "lightning:lnbc" + nanoBtc + "n1placeholder_" + safeDesc;
     }
 
     private void generateQrCode(String content) {
