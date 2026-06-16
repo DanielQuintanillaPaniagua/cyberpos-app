@@ -147,4 +147,11 @@
     <string name="error_amount_invalid">Ingresa un monto válido mayor a 0</string>
     <string name="error_qr_generation">Error al generar el QR</string>
     <string name="error_save_payment">Error al guardar el pago</string>
+
+    <!-- BTCPay Server / payment settled -->
+    <string name="error_btcpay_invoice">Error al crear factura en BTCPay</string>
+    <string name="label_payment_received">PAGO RECIBIDO</string>
+    <string name="label_payment_received_subtitle">Bitcoin recibido vía Lightning Network</string>
+    <string name="btn_new_payment_reset">⚡ Nuevo Cobro</string>
+    <string name="qr_waiting">Esperando pago…</string>
 </resources>

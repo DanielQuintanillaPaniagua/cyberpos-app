@@ -3,6 +3,12 @@ plugins {
     id 'com.google.gms.google-services'
 }
 
+def localProps = new Properties()
+def localPropsFile = rootProject.file('local.properties')
+if (localPropsFile.exists()) {
+    localProps.load(new FileInputStream(localPropsFile))
+}
+
 android {
     namespace 'com.cyberpos.app'
     compileSdk 34
@@ -14,6 +20,10 @@ android {
         versionCode 1
         versionName "1.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField "String", "BTCPAY_API_KEY",  "\"${localProps.getProperty('BTCPAY_API_KEY',  '')}\""
+        buildConfigField "String", "BTCPAY_STORE_ID", "\"${localProps.getProperty('BTCPAY_STORE_ID', '')}\""
+        buildConfigField "String", "BTCPAY_URL",      "\"${localProps.getProperty('BTCPAY_URL',      '')}\""
     }
 
     buildTypes {
@@ -30,6 +40,7 @@ android {
 
     buildFeatures {
         viewBinding true
+        buildConfig true
     }
 }
 
