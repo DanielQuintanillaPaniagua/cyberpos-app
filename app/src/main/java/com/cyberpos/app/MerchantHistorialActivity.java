@@ -1,11 +1,13 @@
 package com.cyberpos.app;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -13,14 +15,24 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.cyberpos.app.databinding.ActivityMerchantHistorialBinding;
+import com.cyberpos.app.model.Payment;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class MerchantHistorialActivity extends AppCompatActivity {
 
     private ActivityMerchantHistorialBinding binding;
+    private FirebaseFirestore db;
+    private FirebaseAuth auth;
+    private MerchantTxAdapter adapter;
+    private final List<ListItem> items = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,50 +40,135 @@ public class MerchantHistorialActivity extends AppCompatActivity {
         binding = ActivityMerchantHistorialBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        setupRecyclerView();
+        db   = FirebaseFirestore.getInstance();
+        auth = FirebaseAuth.getInstance();
+
+        adapter = new MerchantTxAdapter(items);
+        binding.recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        binding.recyclerView.setAdapter(adapter);
+
         setupBottomNav();
     }
 
-    private void setupRecyclerView() {
-        List<MerchantTx> allTx = buildMockTransactions();
-
-        double totalBtc = 0;
-        double totalUsd = 0;
-        for (MerchantTx tx : allTx) {
-            totalBtc += tx.btcAmount;
-            totalUsd += tx.usdAmount;
-        }
-
-        binding.tvTotalBtc.setText(String.format("+%.8f BTC", totalBtc));
-        binding.tvTotalUsd.setText(String.format("≈ $%.2f USD", totalUsd));
-        binding.tvTxCount.setText(String.valueOf(allTx.size()));
-
-        List<ListItem> items = new ArrayList<>();
-        items.add(ListItem.header("HOY"));
-        items.add(ListItem.tx(allTx.get(0)));
-        items.add(ListItem.tx(allTx.get(1)));
-        items.add(ListItem.tx(allTx.get(2)));
-        items.add(ListItem.header("AYER"));
-        items.add(ListItem.tx(allTx.get(3)));
-        items.add(ListItem.tx(allTx.get(4)));
-        items.add(ListItem.header("11 Jun 2026"));
-        items.add(ListItem.tx(allTx.get(5)));
-        items.add(ListItem.tx(allTx.get(6)));
-
-        binding.recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        binding.recyclerView.setAdapter(new MerchantTxAdapter(items));
+    @Override
+    protected void onResume() {
+        super.onResume();
+        binding.bottomNav.setSelectedItemId(R.id.nav_merchant_history);
+        loadPayments();
     }
 
-    private List<MerchantTx> buildMockTransactions() {
-        return Arrays.asList(
-            new MerchantTx("Carlos Mendoza",  "14:32", 0.00042000, 24.99),
-            new MerchantTx("Laura Guerrero",  "11:15", 0.00021000, 12.50),
-            new MerchantTx("Javier Ramos",    "09:03", 0.00170000, 101.15),
-            new MerchantTx("María López",     "18:45", 0.00085000, 50.58),
-            new MerchantTx("Pedro Alvarado",  "13:20", 0.00030000, 17.85),
-            new MerchantTx("Ana Cortez",      "20:11", 0.00190000, 113.05),
-            new MerchantTx("Diego Flores",    "16:37", 0.00062000, 36.90)
-        );
+    // ── Firestore ─────────────────────────────────────────────────────────────
+
+    private void loadPayments() {
+        String uid = auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : null;
+        if (uid == null) return;
+
+        db.collection("payments")
+                .whereEqualTo("merchantId", uid)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    List<Payment> payments = snapshot.toObjects(Payment.class);
+                    payments.sort((a, b) -> {
+                        Date da = a.getCreatedAt(), db2 = b.getCreatedAt();
+                        if (da == null) return 1;
+                        if (db2 == null) return -1;
+                        return db2.compareTo(da);
+                    });
+                    updateUI(payments);
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, R.string.error_load_payments, Toast.LENGTH_SHORT).show());
+    }
+
+    private void updateUI(List<Payment> payments) {
+        double totalBtc = 0, totalUsd = 0;
+        int txThisMonth = 0;
+        Calendar now = Calendar.getInstance();
+        int thisMonth = now.get(Calendar.MONTH);
+        int thisYear  = now.get(Calendar.YEAR);
+
+        for (Payment p : payments) {
+            if ("settled".equals(p.getStatus())) {
+                totalBtc += p.getAmountBtc();
+                totalUsd += p.getAmountUsd();
+                if (p.getCreatedAt() != null) {
+                    Calendar c = Calendar.getInstance();
+                    c.setTime(p.getCreatedAt());
+                    if (c.get(Calendar.MONTH) == thisMonth && c.get(Calendar.YEAR) == thisYear) {
+                        txThisMonth++;
+                    }
+                }
+            }
+        }
+
+        binding.tvTotalBtc.setText(String.format(Locale.US, "+%.8f BTC", totalBtc));
+        binding.tvTotalUsd.setText(String.format(Locale.US, "≈ $%.2f USD", totalUsd));
+        binding.tvTxCount.setText(String.valueOf(txThisMonth));
+
+        items.clear();
+
+        if (payments.isEmpty()) {
+            binding.tvEmptyState.setVisibility(View.VISIBLE);
+            binding.recyclerView.setVisibility(View.GONE);
+        } else {
+            binding.tvEmptyState.setVisibility(View.GONE);
+            binding.recyclerView.setVisibility(View.VISIBLE);
+            buildGroupedList(payments);
+        }
+
+        adapter.notifyDataSetChanged();
+    }
+
+    private void buildGroupedList(List<Payment> payments) {
+        Calendar today = Calendar.getInstance();
+        today.set(Calendar.HOUR_OF_DAY, 0);
+        today.set(Calendar.MINUTE, 0);
+        today.set(Calendar.SECOND, 0);
+        today.set(Calendar.MILLISECOND, 0);
+
+        Calendar yesterday = (Calendar) today.clone();
+        yesterday.add(Calendar.DAY_OF_YEAR, -1);
+
+        SimpleDateFormat dateFmt = new SimpleDateFormat("dd MMM yyyy", new Locale("es", "MX"));
+        SimpleDateFormat timeFmt = new SimpleDateFormat("HH:mm", Locale.getDefault());
+
+        String currentHeader = null;
+
+        for (Payment payment : payments) {
+            Date ts = payment.getCreatedAt();
+            if (ts == null) continue;
+
+            Calendar payDate = Calendar.getInstance();
+            payDate.setTime(ts);
+            payDate.set(Calendar.HOUR_OF_DAY, 0);
+            payDate.set(Calendar.MINUTE, 0);
+            payDate.set(Calendar.SECOND, 0);
+            payDate.set(Calendar.MILLISECOND, 0);
+
+            String headerLabel;
+            if (payDate.equals(today)) {
+                headerLabel = "HOY";
+            } else if (payDate.equals(yesterday)) {
+                headerLabel = "AYER";
+            } else {
+                headerLabel = dateFmt.format(ts).toUpperCase(Locale.getDefault());
+            }
+
+            if (!headerLabel.equals(currentHeader)) {
+                items.add(ListItem.header(headerLabel));
+                currentHeader = headerLabel;
+            }
+
+            String name = payment.getCustomerName() != null && !payment.getCustomerName().isEmpty()
+                    ? payment.getCustomerName() : "Cliente";
+
+            items.add(ListItem.tx(new MerchantTx(
+                    name,
+                    timeFmt.format(ts),
+                    payment.getAmountBtc(),
+                    payment.getAmountUsd(),
+                    payment.getStatus())));
+        }
     }
 
     private void setupBottomNav() {
@@ -89,12 +186,6 @@ public class MerchantHistorialActivity extends AppCompatActivity {
         binding.bottomNav.setSelectedItemId(R.id.nav_merchant_history);
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        binding.bottomNav.setSelectedItemId(R.id.nav_merchant_history);
-    }
-
     // ── Model ────────────────────────────────────────────────────────────────
 
     static class MerchantTx {
@@ -102,12 +193,15 @@ public class MerchantHistorialActivity extends AppCompatActivity {
         final String time;
         final double btcAmount;
         final double usdAmount;
+        final String status;
 
-        MerchantTx(String customerName, String time, double btcAmount, double usdAmount) {
+        MerchantTx(String customerName, String time,
+                   double btcAmount, double usdAmount, String status) {
             this.customerName = customerName;
             this.time = time;
             this.btcAmount = btcAmount;
             this.usdAmount = usdAmount;
+            this.status = status;
         }
     }
 
@@ -125,13 +219,8 @@ public class MerchantHistorialActivity extends AppCompatActivity {
             this.tx = tx;
         }
 
-        static ListItem header(String label) {
-            return new ListItem(TYPE_HEADER, label, null);
-        }
-
-        static ListItem tx(MerchantTx t) {
-            return new ListItem(TYPE_TX, null, t);
-        }
+        static ListItem header(String label) { return new ListItem(TYPE_HEADER, label, null); }
+        static ListItem tx(MerchantTx t)     { return new ListItem(TYPE_TX, null, t); }
     }
 
     // ── Adapter ──────────────────────────────────────────────────────────────
@@ -140,25 +229,19 @@ public class MerchantHistorialActivity extends AppCompatActivity {
 
         private final List<ListItem> items;
 
-        MerchantTxAdapter(List<ListItem> items) {
-            this.items = items;
-        }
+        MerchantTxAdapter(List<ListItem> items) { this.items = items; }
 
         @Override
-        public int getItemViewType(int position) {
-            return items.get(position).type;
-        }
+        public int getItemViewType(int position) { return items.get(position).type; }
 
         @NonNull
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             LayoutInflater inflater = LayoutInflater.from(parent.getContext());
             if (viewType == ListItem.TYPE_HEADER) {
-                View view = inflater.inflate(R.layout.item_date_header, parent, false);
-                return new HeaderViewHolder(view);
+                return new HeaderViewHolder(inflater.inflate(R.layout.item_date_header, parent, false));
             }
-            View view = inflater.inflate(R.layout.item_merchant_transaction, parent, false);
-            return new TxViewHolder(view);
+            return new TxViewHolder(inflater.inflate(R.layout.item_merchant_transaction, parent, false));
         }
 
         @Override
@@ -172,20 +255,23 @@ public class MerchantHistorialActivity extends AppCompatActivity {
                 vh.tvInitials.setText(String.valueOf(tx.customerName.charAt(0)));
                 vh.tvCustomerName.setText(tx.customerName);
                 vh.tvTime.setText(tx.time);
-                vh.tvBtcAmount.setText(String.format("+%.8f BTC", tx.btcAmount));
-                vh.tvUsdAmount.setText(String.format("≈ $%.2f USD", tx.usdAmount));
-                vh.tvStatus.setText("✓ COMPLETADO");
+                vh.tvBtcAmount.setText(String.format(Locale.US, "+%.8f BTC", tx.btcAmount));
+                vh.tvUsdAmount.setText(String.format(Locale.US, "≈ $%.2f USD", tx.usdAmount));
+                if ("settled".equals(tx.status)) {
+                    vh.tvStatus.setText("✓ COMPLETADO");
+                    vh.tvStatus.setTextColor(Color.parseColor("#00FF88"));
+                } else {
+                    vh.tvStatus.setText("⏳ PENDIENTE");
+                    vh.tvStatus.setTextColor(Color.parseColor("#FFC107"));
+                }
             }
         }
 
         @Override
-        public int getItemCount() {
-            return items.size();
-        }
+        public int getItemCount() { return items.size(); }
 
         static class HeaderViewHolder extends RecyclerView.ViewHolder {
             final TextView tvDateHeader;
-
             HeaderViewHolder(@NonNull View itemView) {
                 super(itemView);
                 tvDateHeader = itemView.findViewById(R.id.tvDateHeader);
@@ -193,12 +279,8 @@ public class MerchantHistorialActivity extends AppCompatActivity {
         }
 
         static class TxViewHolder extends RecyclerView.ViewHolder {
-            final TextView tvInitials;
-            final TextView tvCustomerName;
-            final TextView tvTime;
-            final TextView tvBtcAmount;
-            final TextView tvUsdAmount;
-            final TextView tvStatus;
+            final TextView tvInitials, tvCustomerName, tvTime,
+                    tvBtcAmount, tvUsdAmount, tvStatus;
 
             TxViewHolder(@NonNull View itemView) {
                 super(itemView);

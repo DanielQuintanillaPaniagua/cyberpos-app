@@ -8,6 +8,8 @@ public class Payment {
 
     private String merchantId;
     private double amountUsd;
+    private double amountBtc;
+    private String customerName;
     private String description;
     private String lightningInvoice;
     private String btcPayInvoiceId;
@@ -18,15 +20,17 @@ public class Payment {
 
     public Payment() {}
 
-    public Payment(String merchantId, double amountUsd, String description,
-                   String lightningInvoice, String btcPayInvoiceId, Date createdAt) {
+    public Payment(String merchantId, double amountUsd, double amountBtc, String customerName,
+                   String description, String lightningInvoice, String btcPayInvoiceId) {
         this.merchantId = merchantId;
         this.amountUsd = amountUsd;
+        this.amountBtc = amountBtc;
+        this.customerName = customerName != null ? customerName : "";
         this.description = description;
         this.lightningInvoice = lightningInvoice;
         this.btcPayInvoiceId = btcPayInvoiceId;
         this.status = "pending";
-        this.createdAt = createdAt;
+        this.createdAt = null; // @ServerTimestamp fills this
     }
 
     public String getMerchantId() { return merchantId; }
@@ -34,6 +38,12 @@ public class Payment {
 
     public double getAmountUsd() { return amountUsd; }
     public void setAmountUsd(double amountUsd) { this.amountUsd = amountUsd; }
+
+    public double getAmountBtc() { return amountBtc; }
+    public void setAmountBtc(double amountBtc) { this.amountBtc = amountBtc; }
+
+    public String getCustomerName() { return customerName; }
+    public void setCustomerName(String customerName) { this.customerName = customerName; }
 
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }

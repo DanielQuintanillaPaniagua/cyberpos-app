@@ -27,7 +27,6 @@ import org.json.JSONObject;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Date;
 import java.util.Locale;
 import java.util.Scanner;
 
@@ -338,7 +337,8 @@ public class PaymentActivity extends AppCompatActivity {
     private void savePaymentToFirestore(double amount, String description,
                                         String bolt11, String invoiceId) {
         String uid = auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : "unknown";
-        Payment payment = new Payment(uid, amount, description, bolt11, invoiceId, new Date());
+        double amountBtc = btcUsdRate > 0 ? amount / btcUsdRate : 0;
+        Payment payment = new Payment(uid, amount, amountBtc, "", description, bolt11, invoiceId);
 
         db.collection("payments")
                 .add(payment)

@@ -97,12 +97,19 @@
     <string name="value_language">Español</string>
 
     <!-- QR scanner -->
-    <string name="msg_camera_needed">Necesaria para escanear facturas Lightning de los comercios</string>
+    <string name="msg_camera_needed">Necesaria para escanear facturas Lightning o direcciones Bitcoin</string>
     <string name="btn_open_settings">Abrir Ajustes</string>
     <string name="label_invoice_valid">✓ FACTURA VÁLIDA</string>
+    <string name="label_address_valid">✓ DIRECCIÓN VÁLIDA</string>
     <string name="btn_scan_again">Escanear otra</string>
     <string name="error_invalid_invoice">Código QR no reconocido como factura Lightning</string>
+    <string name="error_invalid_qr">Código QR no reconocido</string>
     <string name="error_invoice_no_amount">Factura de monto variable</string>
+    <string name="error_address_no_amount">Dirección sin monto</string>
+    <string name="value_network_onchain">⛓ On-chain</string>
+    <string name="label_btcpay_invoice_valid">✓ INVOICE BTCPay</string>
+    <string name="label_btcpay_fetching">⏳ VERIFICANDO...</string>
+    <string name="error_btcpay_fetch">Error al obtener factura (HTTP %1$d)</string>
 
     <!-- Live BTC price -->
     <string name="label_btc_price">PRECIO BTC</string>
@@ -119,6 +126,8 @@
     <!-- MerchantHistorialActivity -->
     <string name="subtitle_merchant_historial">Pagos recibidos</string>
     <string name="label_total_received">TOTAL RECIBIDO</string>
+    <string name="msg_no_payments">Aún no tienes cobros</string>
+    <string name="error_load_payments">Error al cargar los pagos</string>
 
     <!-- MerchantAjustesActivity -->
     <string name="label_role_merchant">Comerciante</string>
