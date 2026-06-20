@@ -1,6 +1,19 @@
 package com.cyberpos.app;
 
+/*
+ * TEMPORARY: The "Confirmar pago (modo prueba)" button simulates payment for
+ * regtest testing only. It copies the on-chain destination address to the
+ * clipboard and instructs the developer to mine a block to that address via
+ * bitcoin-cli. A production version must replace this with a real Lightning
+ * wallet integration (e.g. LND, Phoenix, Breez SDK) that can sign and
+ * broadcast a transaction directly from the app without manual intervention.
+ */
+
 import android.Manifest;
+import android.content.ClipData;
+import android.util.Log;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -19,16 +32,21 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.cyberpos.app.databinding.ActivityCustomerHomeBinding;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.journeyapps.barcodescanner.BarcodeCallback;
 import com.journeyapps.barcodescanner.BarcodeResult;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -37,27 +55,34 @@ public class CustomerHomeActivity extends AppCompatActivity {
 
     private static final int CAMERA_PERMISSION_REQUEST = 101;
     private static final double WALLET_BTC = 0.00150000;
+    private static final long POLL_INTERVAL_MS = 3_000L;
 
     private enum PaymentType { LIGHTNING, BITCOIN_ONCHAIN, BTCPAY_INVOICE }
 
-    // BOLT11 prefix pattern: ln + chain + amount_digits + optional_multiplier + "1"
     private static final Pattern BOLT11_AMOUNT =
             Pattern.compile("^ln(?:bc|tb|bcrt)(\\d+)([munp])?1", Pattern.CASE_INSENSITIVE);
-
-    // BTCPay checkout URL: http(s)://host/i/INVOICEID
     private static final Pattern BTCPAY_CHECKOUT_URL =
             Pattern.compile("^https?://[^/]+/i/([^/?&#]+)", Pattern.CASE_INSENSITIVE);
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     private ActivityCustomerHomeBinding binding;
+    private FirebaseAuth auth;
+    private FirebaseFirestore db;
+
+    // ── Scanner state ────────────────────────────────────────────────────────
     private boolean scannerResumed = false;
     private double btcUsdRate = 0;
     private String scannedInvoice = null;
     private double scannedBtcAmount = 0;
     private PaymentType scannedType = null;
-    // Holds the USD amount from a BTCPay invoice fetched before the live rate was ready
     private double pendingBtcPayUsd = 0;
+
+    // ── Payment flow state ───────────────────────────────────────────────────
+    private String paymentDestAddress = null;
+    private volatile boolean pollingStopped = true;
+    private String paymentFirestoreDocId = null;
+    private final Runnable invoicePollRunnable = this::pollInvoiceStatusOnThread;
 
     private final PriceService.Listener priceListener = price -> {
         btcUsdRate = price;
@@ -67,7 +92,6 @@ public class CustomerHomeActivity extends AppCompatActivity {
         binding.tvWalletUsd.setText(
                 String.format(Locale.US, "≈ $%.2f USD", WALLET_BTC * price));
 
-        // BTCPay invoice arrived before the rate: compute BTC now
         if (scannedType == PaymentType.BTCPAY_INVOICE && pendingBtcPayUsd > 0 && scannedBtcAmount == 0) {
             double btc = pendingBtcPayUsd / price;
             scannedBtcAmount = btc;
@@ -93,16 +117,20 @@ public class CustomerHomeActivity extends AppCompatActivity {
         binding = ActivityCustomerHomeBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        auth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
+
         setupTabs();
         setupAmountInput();
         setupPayButton();
+        setupPaymentConfirmScreen();
         setupBottomNav();
         binding.btnScanAgain.setOnClickListener(v -> resetToScanning());
         binding.btnOpenSettings.setOnClickListener(v -> openAppSettings());
         requestCameraIfNeeded();
     }
 
-    // ── Tabs ────────────────────────────────────────────────────────────────
+    // ── Tabs ─────────────────────────────────────────────────────────────────
 
     private void setupTabs() {
         binding.toggleGroup.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
@@ -116,7 +144,6 @@ public class CustomerHomeActivity extends AppCompatActivity {
                     binding.btnPayNow.setEnabled(false);
                     resumeScannerIfPermitted();
                 } else {
-                    // Result already scanned — keep details visible
                     binding.layoutScan.setVisibility(View.GONE);
                     binding.layoutInvoiceDetails.setVisibility(View.VISIBLE);
                     binding.btnPayNow.setEnabled(scannedBtcAmount > 0);
@@ -132,7 +159,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
         binding.toggleGroup.check(R.id.tabScan);
     }
 
-    // ── Amount input (manual tab) ────────────────────────────────────────────
+    // ── Amount input (manual tab) ─────────────────────────────────────────────
 
     private void setupAmountInput() {
         binding.etBtcAmount.addTextChangedListener(new TextWatcher() {
@@ -168,14 +195,238 @@ public class CustomerHomeActivity extends AppCompatActivity {
         }
     }
 
-    // ── Pay button ───────────────────────────────────────────────────────────
+    // ── Pay button ────────────────────────────────────────────────────────────
 
     private void setupPayButton() {
-        binding.btnPayNow.setOnClickListener(v ->
-                Toast.makeText(this, R.string.processing_payment, Toast.LENGTH_SHORT).show());
+        binding.btnPayNow.setOnClickListener(v -> initiatePayment());
     }
 
-    // ── Bottom nav ───────────────────────────────────────────────────────────
+    // ── Payment confirm / sent screens ────────────────────────────────────────
+
+    private void setupPaymentConfirmScreen() {
+        binding.btnConfirmTestPayment.setOnClickListener(v -> onConfirmTestPayment());
+        binding.btnCancelPayment.setOnClickListener(v -> onCancelPayment());
+        binding.btnNewScan.setOnClickListener(v -> resetToScanning());
+    }
+
+    // ── Payment initiation ────────────────────────────────────────────────────
+
+    private void initiatePayment() {
+        if (scannedInvoice == null || scannedBtcAmount <= 0
+                || scannedType != PaymentType.BTCPAY_INVOICE) {
+            Toast.makeText(this, R.string.processing_payment, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        binding.btnPayNow.setEnabled(false);
+        binding.btnPayNow.setText(R.string.label_fetching_address);
+
+        String uid = auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : null;
+        if (uid == null) {
+            fetchPaymentAddress(scannedInvoice, "Cliente", "");
+            return;
+        }
+
+        db.collection("users").document(uid)
+                .get()
+                .addOnSuccessListener(doc -> {
+                    String name = doc.getString("fullName");
+                    if (name == null || name.isEmpty()) name = "Cliente";
+                    fetchPaymentAddress(scannedInvoice, name, uid);
+                })
+                .addOnFailureListener(e ->
+                        fetchPaymentAddress(scannedInvoice, "Cliente", uid));
+    }
+
+    private void fetchPaymentAddress(String invoiceId, String customerName, String payerUid) {
+        new Thread(() -> {
+            HttpURLConnection conn = null;
+            try {
+                String endpoint = BuildConfig.BTCPAY_URL + "/api/v1/stores/"
+                        + BuildConfig.BTCPAY_STORE_ID + "/invoices/"
+                        + invoiceId + "/payment-methods";
+                conn = (HttpURLConnection) new URL(endpoint).openConnection();
+                conn.setRequestProperty("Authorization", "token " + BuildConfig.BTCPAY_API_KEY);
+                conn.setConnectTimeout(10_000);
+                conn.setReadTimeout(10_000);
+
+                int code = conn.getResponseCode();
+                if (code == 200) {
+                    JSONArray methods = new JSONArray(readStream(conn.getInputStream()));
+                    String destAddress = null;
+                    for (int i = 0; i < methods.length(); i++) {
+                        JSONObject m = methods.getJSONObject(i);
+                        if ("BTC-CHAIN".equalsIgnoreCase(m.optString("paymentMethodId", ""))) {
+                            String addr = m.optString("destination", null);
+                            if (addr != null && !addr.isEmpty()) {
+                                destAddress = addr;
+                                break;
+                            }
+                        }
+                    }
+                    final String finalAddr = destAddress;
+                    mainHandler.post(() -> {
+                        if (isFinishing() || isDestroyed()) return;
+                        if (finalAddr != null) {
+                            paymentDestAddress = finalAddr;
+                            savePayerInfoToFirestore(invoiceId, customerName, payerUid);
+                            showPaymentConfirm(finalAddr, scannedBtcAmount);
+                        } else {
+                            resetPayButton();
+                            Toast.makeText(this, R.string.error_no_btc_address,
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                } else {
+                    final int finalCode = code;
+                    mainHandler.post(() -> {
+                        if (isFinishing() || isDestroyed()) return;
+                        resetPayButton();
+                        Toast.makeText(this,
+                                getString(R.string.error_payment_methods_fetch, finalCode),
+                                Toast.LENGTH_SHORT).show();
+                    });
+                }
+            } catch (Exception e) {
+                Log.e("BTCPay", "fetchPaymentAddress exception", e);
+                final String msg = e.getMessage();
+                mainHandler.post(() -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    resetPayButton();
+                    Toast.makeText(this,
+                            msg != null ? msg : getString(R.string.error_btcpay_invoice),
+                            Toast.LENGTH_SHORT).show();
+                });
+            } finally {
+                if (conn != null) conn.disconnect();
+            }
+        }).start();
+    }
+
+    private void savePayerInfoToFirestore(String invoiceId, String customerName, String payerUid) {
+        db.collection("payments")
+                .whereEqualTo("btcPayInvoiceId", invoiceId)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    if (snapshot.isEmpty()) return;
+                    String docId = snapshot.getDocuments().get(0).getId();
+                    paymentFirestoreDocId = docId;
+                    Map<String, Object> update = new HashMap<>();
+                    update.put("customerName", customerName);
+                    update.put("payerUid", payerUid);
+                    db.collection("payments").document(docId).update(update);
+                });
+    }
+
+    private void showPaymentConfirm(String address, double btcAmount) {
+        binding.tvConfirmBtcAmount.setText(
+                String.format(Locale.US, "%.8f BTC", btcAmount));
+        if (btcUsdRate > 0) {
+            binding.tvConfirmUsd.setText(
+                    getString(R.string.format_usd_equivalent, btcAmount * btcUsdRate));
+        } else {
+            binding.tvConfirmUsd.setText("");
+        }
+        binding.tvConfirmAddress.setText(address);
+        binding.tvRegtestInstructions.setText(
+                getString(R.string.msg_regtest_cmd, address));
+
+        binding.btnPayNow.setText(R.string.btn_pay_now);
+        binding.btnPayNow.setEnabled(true);
+        binding.btnConfirmTestPayment.setEnabled(true);
+        binding.btnConfirmTestPayment.setText(R.string.btn_confirm_test_payment);
+        binding.layoutPaymentConfirm.setVisibility(View.VISIBLE);
+    }
+
+    private void onConfirmTestPayment() {
+        if (paymentDestAddress == null) return;
+
+        ClipboardManager cm = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        cm.setPrimaryClip(ClipData.newPlainText("btc_address", paymentDestAddress));
+        Toast.makeText(this,
+                getString(R.string.msg_address_copied, paymentDestAddress),
+                Toast.LENGTH_LONG).show();
+
+        binding.btnConfirmTestPayment.setEnabled(false);
+        binding.btnConfirmTestPayment.setText(R.string.label_waiting_confirmation);
+        startPolling();
+    }
+
+    private void onCancelPayment() {
+        stopPolling();
+        paymentDestAddress = null;
+        binding.btnConfirmTestPayment.setEnabled(true);
+        binding.btnConfirmTestPayment.setText(R.string.btn_confirm_test_payment);
+        binding.layoutPaymentConfirm.setVisibility(View.GONE);
+    }
+
+    // ── Invoice status polling ─────────────────────────────────────────────────
+
+    private void startPolling() {
+        pollingStopped = false;
+        mainHandler.postDelayed(invoicePollRunnable, POLL_INTERVAL_MS);
+    }
+
+    private void stopPolling() {
+        pollingStopped = true;
+        mainHandler.removeCallbacks(invoicePollRunnable);
+    }
+
+    private void pollInvoiceStatusOnThread() {
+        if (pollingStopped || scannedInvoice == null) return;
+        new Thread(() -> {
+            HttpURLConnection conn = null;
+            try {
+                URL url = new URL(BuildConfig.BTCPAY_URL + "/api/v1/stores/"
+                        + BuildConfig.BTCPAY_STORE_ID + "/invoices/" + scannedInvoice);
+                conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestProperty("Authorization", "token " + BuildConfig.BTCPAY_API_KEY);
+                conn.setConnectTimeout(10_000);
+                conn.setReadTimeout(10_000);
+
+                String status = "";
+                if (conn.getResponseCode() == 200) {
+                    JSONObject json = new JSONObject(readStream(conn.getInputStream()));
+                    status = json.optString("status", "");
+                }
+                final String finalStatus = status;
+                mainHandler.post(() -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    if ("Settled".equals(finalStatus)) {
+                        onPaymentSettled();
+                    } else if (!pollingStopped) {
+                        mainHandler.postDelayed(invoicePollRunnable, POLL_INTERVAL_MS);
+                    }
+                });
+            } catch (Exception e) {
+                mainHandler.post(() -> {
+                    if (!pollingStopped && !isFinishing() && !isDestroyed()) {
+                        mainHandler.postDelayed(invoicePollRunnable, POLL_INTERVAL_MS);
+                    }
+                });
+            } finally {
+                if (conn != null) conn.disconnect();
+            }
+        }).start();
+    }
+
+    private void onPaymentSettled() {
+        stopPolling();
+        if (paymentFirestoreDocId != null) {
+            db.collection("payments").document(paymentFirestoreDocId)
+                    .update("status", "settled");
+        }
+        binding.layoutPaymentConfirm.setVisibility(View.GONE);
+        binding.layoutPaymentSent.setVisibility(View.VISIBLE);
+    }
+
+    private void resetPayButton() {
+        binding.btnPayNow.setEnabled(scannedBtcAmount > 0);
+        binding.btnPayNow.setText(R.string.btn_pay_now);
+    }
+
+    // ── Bottom nav ────────────────────────────────────────────────────────────
 
     private void setupBottomNav() {
         binding.bottomNav.setOnItemSelectedListener(item -> {
@@ -192,7 +443,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
         binding.bottomNav.setSelectedItemId(R.id.nav_pay);
     }
 
-    // ── Camera / scanner ─────────────────────────────────────────────────────
+    // ── Camera / scanner ──────────────────────────────────────────────────────
 
     private void requestCameraIfNeeded() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
@@ -215,7 +466,6 @@ public class CustomerHomeActivity extends AppCompatActivity {
                 scannerResumed = false;
                 handleScannedQr(result.getText());
             }
-
             @Override
             public void possibleResultPoints(List<com.google.zxing.ResultPoint> points) {}
         });
@@ -257,7 +507,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-    // ── QR dispatch ──────────────────────────────────────────────────────────
+    // ── QR dispatch ───────────────────────────────────────────────────────────
 
     private void handleScannedQr(String raw) {
         Toast.makeText(this, "QR: " + raw, Toast.LENGTH_LONG).show();
@@ -348,7 +598,6 @@ public class CustomerHomeActivity extends AppCompatActivity {
         scannedType = PaymentType.BTCPAY_INVOICE;
         pendingBtcPayUsd = 0;
 
-        // Show loading state immediately while the API call is in flight
         binding.tvInvoiceTypeLabel.setText(R.string.label_btcpay_fetching);
         binding.tvNetworkValue.setText(R.string.value_network);
         binding.tvInvoiceBtc.setText(R.string.label_price_loading);
@@ -382,7 +631,6 @@ public class CustomerHomeActivity extends AppCompatActivity {
                         } else if ("USD".equalsIgnoreCase(currency) && btcUsdRate > 0) {
                             btc = invoiceAmount / btcUsdRate;
                         } else if ("USD".equalsIgnoreCase(currency)) {
-                            // Rate not loaded yet — stash and let priceListener finish
                             pendingBtcPayUsd = invoiceAmount;
                         }
                         showPaymentDetails(invoiceId, btc, PaymentType.BTCPAY_INVOICE);
@@ -462,7 +710,6 @@ public class CustomerHomeActivity extends AppCompatActivity {
                     binding.tvInvoiceBtc.setText(R.string.error_address_no_amount);
                     break;
                 case BTCPAY_INVOICE:
-                    // BTC amount is being calculated (rate not ready yet)
                     binding.tvInvoiceBtc.setText(R.string.label_price_loading);
                     break;
             }
@@ -472,24 +719,46 @@ public class CustomerHomeActivity extends AppCompatActivity {
         binding.tvInvoiceId.setText(id);
         binding.layoutScan.setVisibility(View.GONE);
         binding.layoutInvoiceDetails.setVisibility(View.VISIBLE);
-        // Enable pay only once we have an actual BTC amount
         binding.btnPayNow.setEnabled(btc != null && btc > 0);
     }
 
     private void resetToScanning() {
+        stopPolling();
+        paymentDestAddress = null;
+        paymentFirestoreDocId = null;
+
         scannedInvoice = null;
         scannedBtcAmount = 0;
         scannedType = null;
         pendingBtcPayUsd = 0;
+
+        binding.layoutPaymentConfirm.setVisibility(View.GONE);
+        binding.layoutPaymentSent.setVisibility(View.GONE);
         binding.layoutInvoiceDetails.setVisibility(View.GONE);
         binding.layoutScan.setVisibility(View.VISIBLE);
         binding.tvBtcAmount.setText(R.string.label_btc_amount);
         binding.tvUsdEquivalent.setText(R.string.label_usd_equivalent);
+        binding.btnPayNow.setText(R.string.btn_pay_now);
         binding.btnPayNow.setEnabled(false);
+        binding.btnConfirmTestPayment.setEnabled(true);
+        binding.btnConfirmTestPayment.setText(R.string.btn_confirm_test_payment);
         resumeScannerIfPermitted();
     }
 
-    // ── Lifecycle ────────────────────────────────────────────────────────────
+    // ── Back navigation through overlays ─────────────────────────────────────
+
+    @Override
+    public void onBackPressed() {
+        if (binding.layoutPaymentSent.getVisibility() == View.VISIBLE) {
+            resetToScanning();
+        } else if (binding.layoutPaymentConfirm.getVisibility() == View.VISIBLE) {
+            onCancelPayment();
+        } else {
+            super.onBackPressed();
+        }
+    }
+
+    // ── Lifecycle ─────────────────────────────────────────────────────────────
 
     @Override
     protected void onResume() {
@@ -499,6 +768,9 @@ public class CustomerHomeActivity extends AppCompatActivity {
             resumeScannerIfPermitted();
         }
         PriceService.get().addListener(priceListener);
+        if (!pollingStopped && scannedInvoice != null) {
+            mainHandler.postDelayed(invoicePollRunnable, POLL_INTERVAL_MS);
+        }
     }
 
     @Override
@@ -506,5 +778,13 @@ public class CustomerHomeActivity extends AppCompatActivity {
         super.onPause();
         pauseScanner();
         PriceService.get().removeListener(priceListener);
+        mainHandler.removeCallbacks(invoicePollRunnable);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        pollingStopped = true;
+        mainHandler.removeCallbacks(invoicePollRunnable);
     }
 }

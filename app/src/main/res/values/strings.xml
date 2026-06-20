@@ -163,4 +163,21 @@
     <string name="label_payment_received_subtitle">Bitcoin recibido vía Lightning Network</string>
     <string name="btn_new_payment_reset">⚡ Nuevo Cobro</string>
     <string name="qr_waiting">Esperando pago…</string>
+
+    <!-- Customer payment confirm flow (regtest) -->
+    <string name="label_regtest_mode">⚙ MODO PRUEBA — solo regtest</string>
+    <string name="label_confirm_payment">CONFIRMAR PAGO</string>
+    <string name="label_payment_address">DIRECCIÓN DE PAGO</string>
+    <string name="label_regtest_instructions_title">⚙ INSTRUCCIONES REGTEST</string>
+    <string name="msg_regtest_cmd">Pega en tu terminal para simular el pago:\n\nbitcoin-cli generatetoaddress 1 %1$s</string>
+    <string name="btn_confirm_test_payment">⚙ Confirmar pago (modo prueba)</string>
+    <string name="btn_cancel_payment">Cancelar</string>
+    <string name="label_fetching_address">⏳ Obteniendo dirección…</string>
+    <string name="label_waiting_confirmation">Esperando confirmación…</string>
+    <string name="label_payment_sent">PAGO ENVIADO</string>
+    <string name="label_payment_sent_subtitle">Pago confirmado en la red Bitcoin</string>
+    <string name="btn_new_scan">⚡ Nuevo pago</string>
+    <string name="error_no_btc_address">No se encontró dirección BTC on-chain en la factura</string>
+    <string name="error_payment_methods_fetch">Error al obtener métodos de pago (HTTP %1$d)</string>
+    <string name="msg_address_copied">Dirección copiada. Ejecuta:\nbitcoin-cli generatetoaddress 1 %1$s</string>
 </resources>

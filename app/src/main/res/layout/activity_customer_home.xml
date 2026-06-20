@@ -97,493 +97,714 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- Scrollable content area -->
-    <androidx.core.widget.NestedScrollView
+    <!--
+        FrameLayout lets the two payment overlays (layoutPaymentConfirm and
+        layoutPaymentSent) stack on top of the normal scan/pay UI — including
+        the PAGAR AHORA button — without needing a separate Activity.
+    -->
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:fillViewport="false">
+        android:layout_weight="1">
 
+        <!-- ── Normal scan / pay UI ── -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_horizontal"
-            android:orientation="vertical"
-            android:padding="16dp">
+            android:layout_height="match_parent"
+            android:orientation="vertical">
 
-            <!-- BTC amount display -->
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:orientation="horizontal"
-                android:layout_marginTop="8dp">
-
-                <TextView
-                    android:id="@+id/tvBtcAmount"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="monospace"
-                    android:text="@string/label_btc_amount"
-                    android:textColor="@color/neon_green"
-                    android:textSize="36sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:fontFamily="monospace"
-                    android:text="BTC"
-                    android:textColor="@color/neon_green"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <TextView
-                android:id="@+id/tvUsdEquivalent"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:layout_marginBottom="16dp"
-                android:fontFamily="monospace"
-                android:text="@string/label_usd_equivalent"
-                android:textColor="@color/text_secondary"
-                android:textSize="14sp" />
-
-            <!-- Live BTC price chip -->
-            <TextView
-                android:id="@+id/tvLivePrice"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                android:background="@drawable/bg_badge"
-                android:fontFamily="monospace"
-                android:paddingHorizontal="10dp"
-                android:paddingVertical="3dp"
-                android:text="@string/label_price_loading"
-                android:textColor="@color/text_secondary"
-                android:textSize="10sp" />
-
-            <!-- Tab toggle: ESCANEAR QR / INGRESAR MONTO -->
-            <com.google.android.material.button.MaterialButtonToggleGroup
-                android:id="@+id/toggleGroup"
+            <androidx.core.widget.NestedScrollView
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:selectionRequired="true"
-                app:singleSelection="true">
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:fillViewport="false">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/tabScan"
-                    style="@style/Widget.CyberPOS.Button.Toggle"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_weight="1"
-                    android:text="@string/tab_scan_qr"
-                    android:textSize="11sp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/tabAmount"
-                    style="@style/Widget.CyberPOS.Button.Toggle"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_weight="1"
-                    android:text="@string/tab_enter_amount"
-                    android:textSize="11sp" />
-
-            </com.google.android.material.button.MaterialButtonToggleGroup>
-
-            <!-- QR Scanner view (shown when tabScan is selected) -->
-            <FrameLayout
-                android:id="@+id/layoutScan"
-                android:layout_width="260dp"
-                android:layout_height="260dp"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginBottom="8dp">
-
-                <com.journeyapps.barcodescanner.DecoratedBarcodeView
-                    android:id="@+id/barcodeView"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent" />
-
-                <!-- Corner brackets overlaid on camera preview -->
-                <ImageView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:layout_gravity="top|start"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_corner_tl" />
-
-                <ImageView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:layout_gravity="top|end"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_corner_tr" />
-
-                <ImageView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:layout_gravity="bottom|start"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_corner_bl" />
-
-                <ImageView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:layout_gravity="bottom|end"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_corner_br" />
-
-                <!-- Camera permission denied placeholder -->
                 <LinearLayout
-                    android:id="@+id/layoutPermissionDenied"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:background="@color/surface_variant"
-                    android:gravity="center"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
                     android:orientation="vertical"
-                    android:padding="16dp"
-                    android:visibility="gone">
+                    android:padding="16dp">
 
+                    <!-- BTC amount display -->
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:layout_marginTop="8dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/tvBtcAmount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="monospace"
+                            android:text="@string/label_btc_amount"
+                            android:textColor="@color/neon_green"
+                            android:textSize="36sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="6dp"
+                            android:fontFamily="monospace"
+                            android:text="BTC"
+                            android:textColor="@color/neon_green"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvUsdEquivalent"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:layout_marginBottom="16dp"
+                        android:fontFamily="monospace"
+                        android:text="@string/label_usd_equivalent"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="14sp" />
+
+                    <!-- Live BTC price chip -->
+                    <TextView
+                        android:id="@+id/tvLivePrice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:background="@drawable/bg_badge"
+                        android:fontFamily="monospace"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="3dp"
+                        android:text="@string/label_price_loading"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="10sp" />
+
+                    <!-- Tab toggle: ESCANEAR QR / INGRESAR MONTO -->
+                    <com.google.android.material.button.MaterialButtonToggleGroup
+                        android:id="@+id/toggleGroup"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        app:selectionRequired="true"
+                        app:singleSelection="true">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/tabScan"
+                            style="@style/Widget.CyberPOS.Button.Toggle"
+                            android:layout_width="0dp"
+                            android:layout_height="40dp"
+                            android:layout_weight="1"
+                            android:text="@string/tab_scan_qr"
+                            android:textSize="11sp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/tabAmount"
+                            style="@style/Widget.CyberPOS.Button.Toggle"
+                            android:layout_width="0dp"
+                            android:layout_height="40dp"
+                            android:layout_weight="1"
+                            android:text="@string/tab_enter_amount"
+                            android:textSize="11sp" />
+
+                    </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                    <!-- QR Scanner view -->
+                    <FrameLayout
+                        android:id="@+id/layoutScan"
+                        android:layout_width="260dp"
+                        android:layout_height="260dp"
+                        android:layout_gravity="center_horizontal"
+                        android:layout_marginBottom="8dp">
+
+                        <com.journeyapps.barcodescanner.DecoratedBarcodeView
+                            android:id="@+id/barcodeView"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent" />
+
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:layout_gravity="top|start"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_corner_tl" />
+
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:layout_gravity="top|end"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_corner_tr" />
+
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:layout_gravity="bottom|start"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_corner_bl" />
+
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:layout_gravity="bottom|end"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_corner_br" />
+
+                        <!-- Camera permission denied placeholder -->
+                        <LinearLayout
+                            android:id="@+id/layoutPermissionDenied"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@color/surface_variant"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:padding="16dp"
+                            android:visibility="gone">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="📷"
+                                android:textSize="36sp" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:fontFamily="monospace"
+                                android:gravity="center"
+                                android:text="@string/label_camera_permission"
+                                android:textColor="@color/text_primary"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="6dp"
+                                android:fontFamily="monospace"
+                                android:gravity="center"
+                                android:text="@string/msg_camera_needed"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="10sp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnOpenSettings"
+                                style="@style/Widget.CyberPOS.Button.Outline"
+                                android:layout_width="wrap_content"
+                                android:layout_height="36dp"
+                                android:layout_marginTop="12dp"
+                                android:fontFamily="monospace"
+                                android:paddingHorizontal="16dp"
+                                android:text="@string/btn_open_settings"
+                                android:textSize="11sp" />
+                        </LinearLayout>
+
+                    </FrameLayout>
+
+                    <!-- Invoice details panel (shown after successful QR scan) -->
+                    <LinearLayout
+                        android:id="@+id/layoutInvoiceDetails"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:background="@drawable/bg_wallet_card"
+                        android:orientation="vertical"
+                        android:padding="16dp"
+                        android:visibility="gone">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:layout_marginBottom="12dp"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/tvInvoiceTypeLabel"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:fontFamily="monospace"
+                                android:text="@string/label_invoice_valid"
+                                android:textColor="@color/neon_green"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnScanAgain"
+                                style="@style/Widget.CyberPOS.Button.Outline"
+                                android:layout_width="wrap_content"
+                                android:layout_height="32dp"
+                                android:fontFamily="monospace"
+                                android:paddingHorizontal="12dp"
+                                android:text="@string/btn_scan_again"
+                                android:textSize="10sp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tvInvoiceBtc"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="monospace"
+                            android:text="0.00000000 BTC"
+                            android:textColor="@color/neon_green"
+                            android:textSize="26sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvInvoiceUsd"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:fontFamily="monospace"
+                            android:text="≈ $0.00 USD"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/tvInvoiceId"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:ellipsize="middle"
+                            android:fontFamily="monospace"
+                            android:maxLines="1"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="9sp" />
+
+                    </LinearLayout>
+
+                    <!-- Manual amount entry (shown when tabAmount is selected) -->
+                    <LinearLayout
+                        android:id="@+id/layoutAmount"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Widget.CyberPOS.TextInputLayout"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="8dp"
+                            android:hint="@string/hint_btc_amount"
+                            app:prefixText="₿ "
+                            app:prefixTextColor="@color/neon_green">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etBtcAmount"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="numberDecimal"
+                                android:textColor="@color/text_primary"
+                                android:textSize="20sp" />
+
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <TextView
+                            android:id="@+id/tvAmountUsd"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="monospace"
+                            android:text="@string/label_usd_equivalent"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="13sp" />
+
+                    </LinearLayout>
+
+                    <!-- Lightning Network label -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="📷"
-                        android:textSize="36sp" />
+                        android:layout_marginTop="4dp"
+                        android:layout_marginBottom="16dp"
+                        android:background="@drawable/bg_badge"
+                        android:fontFamily="monospace"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="4dp"
+                        android:text="@string/label_lightning_network"
+                        android:textColor="@color/neon_green"
+                        android:textSize="11sp" />
+
+                    <!-- Wallet card -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:background="@drawable/bg_wallet_card"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:layout_marginBottom="12dp">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:fontFamily="monospace"
+                                android:text="@string/label_my_wallet"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="🔒"
+                                android:textSize="14sp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tvWalletBtc"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="monospace"
+                            android:text="@string/label_wallet_btc"
+                            android:textColor="@color/neon_green"
+                            android:textSize="22sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvWalletUsd"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:fontFamily="monospace"
+                            android:text="@string/label_wallet_usd"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="13sp" />
+
+                    </LinearLayout>
+
+                    <!-- Transaction info card -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:background="@drawable/bg_wallet_card"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingVertical="8dp">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:fontFamily="monospace"
+                                android:text="@string/label_estimated_fee"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="11sp" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="monospace"
+                                android:text="@string/value_fee"
+                                android:textColor="@color/text_primary"
+                                android:textSize="12sp" />
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="@color/surface" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingVertical="8dp">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:fontFamily="monospace"
+                                android:text="@string/label_estimated_time"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="11sp" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="monospace"
+                                android:text="@string/value_time"
+                                android:textColor="@color/text_primary"
+                                android:textSize="12sp" />
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="@color/surface" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingVertical="8dp">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:fontFamily="monospace"
+                                android:text="@string/label_network"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="11sp" />
+
+                            <TextView
+                                android:id="@+id/tvNetworkValue"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="monospace"
+                                android:text="@string/value_network"
+                                android:textColor="@color/neon_green"
+                                android:textSize="12sp" />
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                </LinearLayout>
+            </androidx.core.widget.NestedScrollView>
+
+            <!-- PAGAR AHORA button — anchored below scroll, covered by overlays -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPayNow"
+                style="@style/Widget.CyberPOS.Button.Primary"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:text="@string/btn_pay_now"
+                android:textSize="16sp" />
+
+        </LinearLayout>
+
+        <!-- ── Payment confirm overlay ──────────────────────────────────────
+             Shows destination address and regtest instructions.
+             Appears after tapping PAGAR AHORA on a BTCPay invoice.     -->
+        <LinearLayout
+            android:id="@+id/layoutPaymentConfirm"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/background"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <androidx.core.widget.NestedScrollView
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:fillViewport="true">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical"
+                    android:padding="24dp">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
+                        android:layout_marginBottom="16dp"
+                        android:background="@drawable/bg_badge"
                         android:fontFamily="monospace"
-                        android:gravity="center"
-                        android:text="@string/label_camera_permission"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:fontFamily="monospace"
-                        android:gravity="center"
-                        android:text="@string/msg_camera_needed"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="3dp"
+                        android:text="@string/label_regtest_mode"
                         android:textColor="@color/text_secondary"
                         android:textSize="10sp" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnOpenSettings"
-                        style="@style/Widget.CyberPOS.Button.Outline"
-                        android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:layout_marginTop="12dp"
-                        android:fontFamily="monospace"
-                        android:paddingHorizontal="16dp"
-                        android:text="@string/btn_open_settings"
-                        android:textSize="11sp" />
-                </LinearLayout>
-
-            </FrameLayout>
-
-            <!-- Invoice details panel (shown after successful QR scan, replaces camera area) -->
-            <LinearLayout
-                android:id="@+id/layoutInvoiceDetails"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:background="@drawable/bg_wallet_card"
-                android:orientation="vertical"
-                android:padding="16dp"
-                android:visibility="gone">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="12dp"
-                    android:orientation="horizontal">
-
                     <TextView
-                        android:id="@+id/tvInvoiceTypeLabel"
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
+                        android:layout_marginBottom="4dp"
                         android:fontFamily="monospace"
-                        android:text="@string/label_invoice_valid"
-                        android:textColor="@color/neon_green"
-                        android:textSize="11sp"
+                        android:text="@string/label_confirm_payment"
+                        android:textColor="@color/text_primary"
+                        android:textSize="22sp"
                         android:textStyle="bold" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnScanAgain"
-                        style="@style/Widget.CyberPOS.Button.Outline"
+                    <TextView
+                        android:id="@+id/tvConfirmBtcAmount"
                         android:layout_width="wrap_content"
-                        android:layout_height="32dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
                         android:fontFamily="monospace"
-                        android:paddingHorizontal="12dp"
-                        android:text="@string/btn_scan_again"
-                        android:textSize="10sp" />
-                </LinearLayout>
+                        android:text="0.00000000 BTC"
+                        android:textColor="@color/neon_green"
+                        android:textSize="30sp"
+                        android:textStyle="bold" />
 
-                <TextView
-                    android:id="@+id/tvInvoiceBtc"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="monospace"
-                    android:text="0.00000000 BTC"
-                    android:textColor="@color/neon_green"
-                    android:textSize="26sp"
-                    android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/tvConfirmUsd"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:layout_marginBottom="24dp"
+                        android:fontFamily="monospace"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="14sp" />
 
-                <TextView
-                    android:id="@+id/tvInvoiceUsd"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:fontFamily="monospace"
-                    android:text="≈ $0.00 USD"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="13sp" />
-
-                <TextView
-                    android:id="@+id/tvInvoiceId"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:ellipsize="middle"
-                    android:fontFamily="monospace"
-                    android:maxLines="1"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="9sp" />
-
-            </LinearLayout>
-
-            <!-- Manual amount entry (shown when tabAmount is selected) -->
-            <LinearLayout
-                android:id="@+id/layoutAmount"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:gravity="center"
-                android:orientation="vertical"
-                android:visibility="gone">
-
-                <com.google.android.material.textfield.TextInputLayout
-                    style="@style/Widget.CyberPOS.TextInputLayout"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"
-                    android:hint="@string/hint_btc_amount"
-                    app:prefixText="₿ "
-                    app:prefixTextColor="@color/neon_green">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etBtcAmount"
+                    <!-- Destination address card -->
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:inputType="numberDecimal"
-                        android:textColor="@color/text_primary"
-                        android:textSize="20sp" />
+                        android:layout_marginBottom="12dp"
+                        android:background="@drawable/bg_wallet_card"
+                        android:orientation="vertical"
+                        android:padding="16dp">
 
-                </com.google.android.material.textfield.TextInputLayout>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="8dp"
+                            android:fontFamily="monospace"
+                            android:text="@string/label_payment_address"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
 
-                <TextView
-                    android:id="@+id/tvAmountUsd"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="monospace"
-                    android:text="@string/label_usd_equivalent"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="13sp" />
+                        <TextView
+                            android:id="@+id/tvConfirmAddress"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="monospace"
+                            android:textColor="@color/neon_green"
+                            android:textIsSelectable="true"
+                            android:textSize="12sp" />
 
-            </LinearLayout>
+                    </LinearLayout>
 
-            <!-- Lightning Network label -->
+                    <!-- Regtest instructions card -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_wallet_card"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="8dp"
+                            android:fontFamily="monospace"
+                            android:text="@string/label_regtest_instructions_title"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvRegtestInstructions"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="monospace"
+                            android:textColor="@color/text_secondary"
+                            android:textIsSelectable="true"
+                            android:textSize="11sp" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+            </androidx.core.widget.NestedScrollView>
+
+            <!-- Fixed bottom buttons -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnConfirmTestPayment"
+                style="@style/Widget.CyberPOS.Button.Primary"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="8dp"
+                android:text="@string/btn_confirm_test_payment"
+                android:textSize="13sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCancelPayment"
+                style="@style/Widget.CyberPOS.Button.Outline"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:text="@string/btn_cancel_payment"
+                android:textSize="13sp" />
+
+        </LinearLayout>
+
+        <!-- ── Payment sent overlay ──────────────────────────────────────
+             Shown when BTCPay invoice status becomes "Settled".        -->
+        <LinearLayout
+            android:id="@+id/layoutPaymentSent"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/background"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="32dp"
+            android:visibility="gone">
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:layout_marginBottom="16dp"
-                android:background="@drawable/bg_badge"
                 android:fontFamily="monospace"
-                android:paddingHorizontal="12dp"
-                android:paddingVertical="4dp"
-                android:text="@string/label_lightning_network"
+                android:text="✓"
                 android:textColor="@color/neon_green"
-                android:textSize="11sp" />
+                android:textSize="80sp"
+                android:textStyle="bold" />
 
-            <!-- Wallet card -->
-            <LinearLayout
-                android:layout_width="match_parent"
+            <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                android:background="@drawable/bg_wallet_card"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:layout_marginTop="12dp"
+                android:fontFamily="monospace"
+                android:gravity="center"
+                android:text="@string/label_payment_sent"
+                android:textColor="@color/neon_green"
+                android:textSize="28sp"
+                android:textStyle="bold" />
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="12dp">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:fontFamily="monospace"
-                        android:text="@string/label_my_wallet"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="11sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="🔒"
-                        android:textSize="14sp" />
-                </LinearLayout>
-
-                <TextView
-                    android:id="@+id/tvWalletBtc"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="monospace"
-                    android:text="@string/label_wallet_btc"
-                    android:textColor="@color/neon_green"
-                    android:textSize="22sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvWalletUsd"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:fontFamily="monospace"
-                    android:text="@string/label_wallet_usd"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="13sp" />
-
-            </LinearLayout>
-
-            <!-- Transaction info card -->
-            <LinearLayout
-                android:layout_width="match_parent"
+            <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:background="@drawable/bg_wallet_card"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:layout_marginTop="8dp"
+                android:fontFamily="monospace"
+                android:gravity="center"
+                android:text="@string/label_payment_sent_subtitle"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp" />
 
-                <!-- COMISIÓN ESTIMADA -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingVertical="8dp">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:fontFamily="monospace"
-                        android:text="@string/label_estimated_fee"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="11sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="monospace"
-                        android:text="@string/value_fee"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp" />
-                </LinearLayout>
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="@color/surface" />
-
-                <!-- TIEMPO ESTIMADO -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingVertical="8dp">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:fontFamily="monospace"
-                        android:text="@string/label_estimated_time"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="11sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="monospace"
-                        android:text="@string/value_time"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp" />
-                </LinearLayout>
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="@color/surface" />
-
-                <!-- RED -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingVertical="8dp">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:fontFamily="monospace"
-                        android:text="@string/label_network"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="11sp" />
-
-                    <TextView
-                        android:id="@+id/tvNetworkValue"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="monospace"
-                        android:text="@string/value_network"
-                        android:textColor="@color/neon_green"
-                        android:textSize="12sp" />
-                </LinearLayout>
-
-            </LinearLayout>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnNewScan"
+                style="@style/Widget.CyberPOS.Button.Primary"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="48dp"
+                android:text="@string/btn_new_scan" />
 
         </LinearLayout>
-    </androidx.core.widget.NestedScrollView>
 
-    <!-- PAGAR AHORA button -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnPayNow"
-        style="@style/Widget.CyberPOS.Button.Primary"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp"
-        android:text="@string/btn_pay_now"
-        android:textSize="16sp" />
+    </FrameLayout>
 
     <!-- Bottom navigation -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
