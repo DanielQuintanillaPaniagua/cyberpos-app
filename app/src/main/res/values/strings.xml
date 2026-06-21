@@ -129,6 +129,25 @@
     <string name="msg_no_payments">Aún no tienes cobros</string>
     <string name="error_load_payments">Error al cargar los pagos</string>
 
+    <!-- InformacionNegocioActivity -->
+    <string name="title_business_info">INFORMACIÓN DEL NEGOCIO</string>
+    <string name="section_basic_data">DATOS BÁSICOS</string>
+    <string name="section_location">UBICACIÓN</string>
+    <string name="hint_nombre_negocio">Nombre del negocio</string>
+    <string name="hint_nombre_comercial">Nombre comercial</string>
+    <string name="hint_descripcion">Descripción</string>
+    <string name="hint_categoria">Categoría</string>
+    <string name="hint_telefono_negocio">Teléfono</string>
+    <string name="hint_email_negocio">Email del negocio</string>
+    <string name="hint_pais">País</string>
+    <string name="hint_departamento">Departamento</string>
+    <string name="hint_ciudad">Ciudad</string>
+    <string name="hint_direccion">Dirección</string>
+    <string name="btn_edit_info">Editar información</string>
+    <string name="btn_save_changes">Guardar cambios</string>
+    <string name="msg_saved_success">Cambios guardados</string>
+    <string name="msg_save_error">Error al guardar: %1$s</string>
+
     <!-- MerchantAjustesActivity -->
     <string name="label_role_merchant">Comerciante</string>
     <string name="section_my_business">MI NEGOCIO</string>

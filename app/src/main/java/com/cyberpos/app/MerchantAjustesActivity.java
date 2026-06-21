@@ -54,17 +54,35 @@ public class MerchantAjustesActivity extends AppCompatActivity {
     }
 
     private void setupSettingsRows() {
-        int[] rowIds = {
-            R.id.rowBusinessInfo, R.id.rowBankAccounts, R.id.rowTaxes,
-            R.id.rowMerchantCurrency, R.id.rowMerchantNotifications,
-            R.id.rowPaymentScreen, R.id.rowConfirmations,
-            R.id.rowMerchantPin, R.id.rowTwoFa, R.id.rowLinkedDevices,
-            R.id.rowHelp, R.id.rowContact, R.id.rowAbout
-        };
-        for (int id : rowIds) {
-            findViewById(id).setOnClickListener(v ->
-                    Toast.makeText(this, R.string.coming_soon, Toast.LENGTH_SHORT).show());
-        }
+        binding.rowBusinessInfo.setOnClickListener(v ->
+            startActivity(new Intent(this, InformacionNegocioActivity.class)));
+        binding.rowBankAccounts.setOnClickListener(v ->
+            startActivity(new Intent(this, CuentasBancariasActivity.class)));
+        binding.rowTaxes.setOnClickListener(v ->
+            startActivity(new Intent(this, ImpuestosTarifasActivity.class)));
+        binding.rowMerchantNotifications.setOnClickListener(v ->
+            startActivity(new Intent(this, NotificacionesMerchantActivity.class)));
+        binding.rowPaymentScreen.setOnClickListener(v ->
+            startActivity(new Intent(this, PantallaCobroActivity.class)));
+
+        binding.rowLanguage.setOnClickListener(v ->
+            startActivity(new Intent(this, IdiomaActivity.class)));
+        binding.rowMerchantCurrency.setOnClickListener(v ->
+            startActivity(new Intent(this, MerchantMonedaActivity.class)));
+        binding.rowConfirmations.setOnClickListener(v ->
+            startActivity(new Intent(this, ConfirmacionesActivity.class)));
+        binding.rowMerchantPin.setOnClickListener(v ->
+            startActivity(new Intent(this, PinSeguridadActivity.class)));
+        binding.rowTwoFa.setOnClickListener(v ->
+            startActivity(new Intent(this, DosFaActivity.class)));
+        binding.rowLinkedDevices.setOnClickListener(v ->
+            startActivity(new Intent(this, DispositivosVinculadosActivity.class)));
+        binding.rowHelp.setOnClickListener(v ->
+            startActivity(new Intent(this, AyudaContactoActivity.class)));
+        binding.rowContact.setOnClickListener(v ->
+            startActivity(new Intent(this, AyudaContactoActivity.class)));
+        binding.rowAbout.setOnClickListener(v ->
+            startActivity(new Intent(this, AyudaContactoActivity.class)));
     }
 
     private void setupBottomNav() {
