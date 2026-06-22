@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Lightning bolt centered in 108x108 viewBox.
+    Safe zone: 18–90 on both axes.
+    Bolt vertices: (62,20) (40,60) (53,60) (45,88) (68,50) (55,50)
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:fillColor="#00FF41"
+        android:pathData="M62,20 L40,60 L53,60 L45,88 L68,50 L55,50 Z" />
+
+</vector>

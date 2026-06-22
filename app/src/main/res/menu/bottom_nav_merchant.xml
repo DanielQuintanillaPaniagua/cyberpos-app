@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_cobros"
+        android:icon="@drawable/ic_pay_nav"
+        android:title="@string/nav_cobros" />
+    <item
+        android:id="@+id/nav_merchant_history"
+        android:icon="@drawable/ic_history_nav"
+        android:title="@string/nav_history" />
+    <item
+        android:id="@+id/nav_merchant_settings"
+        android:icon="@drawable/ic_settings_nav"
+        android:title="@string/nav_settings" />
+</menu>

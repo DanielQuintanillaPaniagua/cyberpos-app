@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dark-mode color overrides — these are the original CyberPOS dark palette -->
+<resources>
+    <color name="background">#0A0A0A</color>
+    <color name="surface">#141414</color>
+    <color name="surface_variant">#1E1E1E</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#9E9E9E</color>
+    <color name="text_on_neon">#0A0A0A</color>
+    <color name="error">#FF5252</color>
+    <color name="error_container">#3D1010</color>
+</resources>

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Base application theme — dark background, neon green accents -->
+    <style name="Theme.CyberPOS" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Color system -->
+        <item name="colorPrimary">@color/neon_green</item>
+        <item name="colorPrimaryVariant">@color/neon_green_dark</item>
+        <item name="colorOnPrimary">@color/text_on_neon</item>
+        <item name="colorSecondary">@color/neon_green</item>
+        <item name="colorSecondaryVariant">@color/neon_green_dark</item>
+        <item name="colorOnSecondary">@color/text_on_neon</item>
+        <item name="android:colorBackground">@color/background</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="colorOnBackground">@color/text_primary</item>
+        <item name="colorError">@color/error</item>
+        <item name="colorOnError">#FFFFFF</item>
+
+        <!-- Status bar -->
+        <item name="android:statusBarColor">@color/background</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:navigationBarColor">@color/background</item>
+
+        <!-- Text -->
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="android:textColorHint">@color/text_secondary</item>
+
+        <!-- Window -->
+        <item name="android:windowBackground">@color/background</item>
+
+        <!-- Action bar (when used) -->
+        <item name="actionBarStyle">@style/Widget.CyberPOS.ActionBar</item>
+        <item name="actionBarTheme">@style/ThemeOverlay.CyberPOS.ActionBar</item>
+    </style>
+
+    <!-- Action bar -->
+    <style name="Widget.CyberPOS.ActionBar" parent="Widget.AppCompat.ActionBar">
+        <item name="background">@color/surface</item>
+        <item name="titleTextStyle">@style/TextAppearance.CyberPOS.ActionBar.Title</item>
+    </style>
+
+    <style name="ThemeOverlay.CyberPOS.ActionBar" parent="ThemeOverlay.AppCompat.Dark.ActionBar">
+        <item name="colorControlNormal">@color/neon_green</item>
+    </style>
+
+    <style name="TextAppearance.CyberPOS.ActionBar.Title" parent="TextAppearance.AppCompat.Widget.ActionBar.Title">
+        <item name="android:textColor">@color/neon_green</item>
+        <item name="android:fontFamily">monospace</item>
+    </style>
+
+    <!-- TextInputLayout — outlined, neon green on focus -->
+    <style name="Widget.CyberPOS.TextInputLayout" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        <item name="boxStrokeColor">@color/text_input_stroke</item>
+        <item name="boxBackgroundColor">@color/surface</item>
+        <item name="hintTextColor">@color/text_input_hint</item>
+        <item name="android:textColorHint">@color/text_secondary</item>
+        <item name="startIconTint">@color/text_secondary</item>
+        <item name="endIconTint">@color/text_secondary</item>
+        <item name="errorTextColor">@color/error</item>
+        <item name="boxStrokeErrorColor">@color/error</item>
+    </style>
+
+    <!-- Primary button — neon green fill, black text -->
+    <style name="Widget.CyberPOS.Button.Primary" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">@color/neon_green</item>
+        <item name="android:textColor">@color/text_on_neon</item>
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:textStyle">bold</item>
+        <item name="cornerRadius">8dp</item>
+        <item name="rippleColor">@color/neon_green_alpha30</item>
+    </style>
+
+    <!-- Toggle button — used inside MaterialButtonToggleGroup for role selection -->
+    <style name="Widget.CyberPOS.Button.Toggle" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="backgroundTint">@color/toggle_btn_bg</item>
+        <item name="android:textColor">@color/toggle_btn_text</item>
+        <item name="strokeColor">@color/neon_green</item>
+        <item name="strokeWidth">1.5dp</item>
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:textSize">14sp</item>
+        <item name="cornerRadius">8dp</item>
+        <item name="rippleColor">@color/neon_green_alpha30</item>
+    </style>
+
+    <!-- Outline button — transparent fill, neon green border -->
+    <style name="Widget.CyberPOS.Button.Outline" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="strokeColor">@color/neon_green</item>
+        <item name="strokeWidth">1.5dp</item>
+        <item name="android:textColor">@color/neon_green</item>
+        <item name="android:fontFamily">monospace</item>
+        <item name="cornerRadius">8dp</item>
+        <item name="rippleColor">@color/neon_green_alpha30</item>
+    </style>
+
+</resources>

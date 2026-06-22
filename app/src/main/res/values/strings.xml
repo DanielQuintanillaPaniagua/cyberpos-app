@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CyberPOS</string>
+    <string name="tagline">Lightning Payments para tu negocio</string>
+    <string name="badge_sv">🇸🇻 Hecho en El Salvador</string>
+    <string name="forgot_password">¿Olvidaste tu contraseña?</string>
+    <string name="forgot_password_sent">Correo de recuperación enviado</string>
+    <string name="forgot_password_enter_email">Ingresa tu correo primero</string>
+
+    <!-- Login screen -->
+    <string name="hint_email">Email</string>
+    <string name="hint_password">Contraseña</string>
+    <string name="btn_login">Ingresar</string>
+    <string name="login_failed">Error al iniciar sesión: %1$s</string>
+    <string name="login_failed_generic">Correo o contraseña incorrectos</string>
+    <string name="error_email_required">Ingresa tu correo</string>
+    <string name="error_password_length">La contraseña debe tener al menos 6 caracteres</string>
+    <string name="link_create_account">¿No tienes cuenta? Crear cuenta</string>
+
+    <!-- Register screen -->
+    <string name="register_subtitle">Crea tu cuenta</string>
+    <string name="register_role_prompt">¿Cómo usarás CyberPOS?</string>
+    <string name="role_merchant">🏪 Soy un negocio</string>
+    <string name="role_customer">👤 Soy un cliente</string>
+    <string name="hint_business_name">Nombre del negocio</string>
+    <string name="hint_full_name">Nombre completo</string>
+    <string name="hint_confirm_password">Confirmar contraseña</string>
+    <string name="btn_create_account">Crear cuenta</string>
+    <string name="link_have_account">¿Ya tienes cuenta? Ingresar</string>
+    <string name="register_failed">Error al registrarse: %1$s</string>
+    <string name="register_failed_generic">No se pudo crear la cuenta. Verifica los datos e intenta de nuevo.</string>
+    <string name="register_success">¡Bienvenido a CyberPOS!</string>
+    <string name="error_business_name_required">Ingresa el nombre del negocio</string>
+    <string name="error_full_name_required">Ingresa tu nombre completo</string>
+    <string name="error_passwords_dont_match">Las contraseñas no coinciden</string>
+
+    <!-- Home screen (customer) -->
+    <string name="btn_scan_qr">⚡ Escanear QR</string>
+    <string name="scan_coming_soon">Función próximamente disponible</string>
+
+    <!-- Main screen -->
+    <string name="welcome_user">Hola, %1$s</string>
+    <string name="welcome_default">Bienvenido</string>
+    <string name="btn_new_payment">⚡ Nuevo Cobro</string>
+    <string name="btn_logout">Cerrar sesión</string>
+    <string name="logged_out">Sesión cerrada</string>
+
+    <!-- Customer Home screen -->
+    <string name="label_lightning_payments">Lightning Payments</string>
+    <string name="label_pay_store">PAGAR A TIENDA</string>
+    <string name="label_bitcoin_lightning">Bitcoin Lightning</string>
+    <string name="tab_scan_qr">ESCANEAR QR</string>
+    <string name="tab_enter_amount">INGRESAR MONTO</string>
+    <string name="label_lightning_network">⚡ Lightning Network</string>
+    <string name="label_my_wallet">MI BILLETERA</string>
+    <string name="label_estimated_fee">COMISIÓN ESTIMADA</string>
+    <string name="label_estimated_time">TIEMPO ESTIMADO</string>
+    <string name="label_network">RED</string>
+    <string name="value_fee">~1 sat ($0.00)</string>
+    <string name="value_time">~3 segundos</string>
+    <string name="value_network">⚡ Lightning</string>
+    <string name="btn_pay_now">⚡ PAGAR AHORA</string>
+    <string name="nav_pay">Pagar</string>
+    <string name="nav_history">Historial</string>
+    <string name="nav_settings">Ajustes</string>
+    <string name="coming_soon">Próximamente</string>
+    <string name="processing_payment">Procesando pago…</string>
+    <string name="hint_btc_amount">Monto en BTC</string>
+    <string name="label_btc_amount">0.00021000</string>
+    <string name="label_usd_equivalent">≈ $12.50 USD</string>
+    <string name="label_wallet_btc">₿ 0.00150000</string>
+    <string name="label_wallet_usd">≈ $89.25 USD</string>
+    <string name="label_camera_permission">Cámara requerida</string>
+    <string name="format_usd_equivalent">≈ $%.2f USD</string>
+    <string name="invoice_scanned">Factura: %1$s…</string>
+
+    <!-- HistorialActivity -->
+    <string name="title_historial">HISTORIAL</string>
+    <string name="subtitle_historial">Tus pagos Lightning</string>
+    <string name="label_total_paid">TOTAL PAGADO</string>
+    <string name="label_transactions">TRANSACCIONES</string>
+    <string name="label_this_month">este mes</string>
+
+    <!-- AjustesActivity -->
+    <string name="title_ajustes">AJUSTES</string>
+    <string name="label_role_customer">Cliente</string>
+    <string name="section_account">CUENTA</string>
+    <string name="section_security">SEGURIDAD</string>
+    <string name="section_app">APLICACIÓN</string>
+    <string name="settings_profile">Perfil</string>
+    <string name="settings_currency">Moneda</string>
+    <string name="settings_pin">PIN de seguridad</string>
+    <string name="settings_biometrics">Biometría</string>
+    <string name="settings_notifications">Notificaciones</string>
+    <string name="settings_language">Idioma</string>
+    <string name="settings_version">Versión</string>
+    <string name="value_version">1.0.0</string>
+    <string name="value_currency">BTC / USD</string>
+    <string name="value_language">Español</string>
+
+    <!-- QR scanner -->
+    <string name="msg_camera_needed">Necesaria para escanear facturas Lightning o direcciones Bitcoin</string>
+    <string name="btn_open_settings">Abrir Ajustes</string>
+    <string name="label_invoice_valid">✓ FACTURA VÁLIDA</string>
+    <string name="label_address_valid">✓ DIRECCIÓN VÁLIDA</string>
+    <string name="btn_scan_again">Escanear otra</string>
+    <string name="error_invalid_invoice">Código QR no reconocido como factura Lightning</string>
+    <string name="error_invalid_qr">Código QR no reconocido</string>
+    <string name="error_invoice_no_amount">Factura de monto variable</string>
+    <string name="error_address_no_amount">Dirección sin monto</string>
+    <string name="value_network_onchain">⛓ On-chain</string>
+    <string name="label_btcpay_invoice_valid">✓ INVOICE BTCPay</string>
+    <string name="label_btcpay_fetching">⏳ VERIFICANDO...</string>
+    <string name="error_btcpay_fetch">Error al obtener factura (HTTP %1$d)</string>
+
+    <!-- Live BTC price -->
+    <string name="label_btc_price">PRECIO BTC</string>
+    <string name="label_price_loading">Cargando…</string>
+    <string name="label_price_live">● LIVE</string>
+
+    <!-- Merchant bottom nav -->
+    <string name="nav_cobros">Cobros</string>
+
+    <!-- PaymentActivity screen header -->
+    <string name="title_cobros">COBROS</string>
+    <string name="subtitle_cobros">Genera tu QR Lightning</string>
+
+    <!-- MerchantHistorialActivity -->
+    <string name="subtitle_merchant_historial">Pagos recibidos</string>
+    <string name="label_total_received">TOTAL RECIBIDO</string>
+    <string name="msg_no_payments">Aún no tienes cobros</string>
+    <string name="error_load_payments">Error al cargar los pagos</string>
+
+    <!-- InformacionNegocioActivity -->
+    <string name="title_business_info">INFORMACIÓN DEL NEGOCIO</string>
+    <string name="section_basic_data">DATOS BÁSICOS</string>
+    <string name="section_location">UBICACIÓN</string>
+    <string name="hint_nombre_negocio">Nombre del negocio</string>
+    <string name="hint_nombre_comercial">Nombre comercial</string>
+    <string name="hint_descripcion">Descripción</string>
+    <string name="hint_categoria">Categoría</string>
+    <string name="hint_telefono_negocio">Teléfono</string>
+    <string name="hint_email_negocio">Email del negocio</string>
+    <string name="hint_pais">País</string>
+    <string name="hint_departamento">Departamento</string>
+    <string name="hint_ciudad">Ciudad</string>
+    <string name="hint_direccion">Dirección</string>
+    <string name="btn_edit_info">Editar información</string>
+    <string name="btn_save_changes">Guardar cambios</string>
+    <string name="msg_saved_success">Cambios guardados</string>
+    <string name="msg_save_error">Error al guardar: %1$s</string>
+
+    <!-- MerchantAjustesActivity -->
+    <string name="label_role_merchant">Comerciante</string>
+    <string name="section_my_business">MI NEGOCIO</string>
+    <string name="settings_business_info">Información del negocio</string>
+    <string name="settings_bank_accounts">Cuentas bancarias</string>
+    <string name="settings_taxes">Impuestos y fiscalidad</string>
+    <string name="section_preferences">PREFERENCIAS</string>
+    <string name="settings_payment_screen">Pantalla de cobro</string>
+    <string name="settings_confirmations">Confirmaciones</string>
+    <string name="settings_2fa">Autenticación 2FA</string>
+    <string name="settings_linked_devices">Dispositivos vinculados</string>
+    <string name="section_support">SOPORTE</string>
+    <string name="settings_help">Ayuda</string>
+    <string name="settings_contact">Contacto</string>
+    <string name="settings_about">Acerca de</string>
+
+    <!-- Payment screen -->
+    <string name="title_new_payment">Nuevo Cobro</string>
+    <string name="hint_amount">Monto (USD)</string>
+    <string name="hint_description">Descripción (opcional)</string>
+    <string name="btn_generate_qr">Generar QR Lightning</string>
+    <string name="cd_qr_code">Código QR de pago Lightning</string>
+    <string name="qr_instructions">Muestra este QR al cliente\npara recibir el pago en Bitcoin</string>
+    <string name="error_amount_required">Ingresa el monto</string>
+    <string name="error_amount_invalid">Ingresa un monto válido mayor a 0</string>
+    <string name="error_qr_generation">Error al generar el QR</string>
+    <string name="error_save_payment">Error al guardar el pago</string>
+
+    <!-- BTCPay Server / payment settled -->
+    <string name="error_btcpay_invoice">Error al crear factura en BTCPay</string>
+    <string name="label_payment_received">PAGO RECIBIDO</string>
+    <string name="label_payment_received_subtitle">Bitcoin recibido vía Lightning Network</string>
+    <string name="btn_new_payment_reset">⚡ Nuevo Cobro</string>
+    <string name="qr_waiting">Esperando pago…</string>
+
+    <!-- Customer payment confirm flow (regtest) -->
+    <string name="label_regtest_mode">⚙ MODO PRUEBA — solo regtest</string>
+    <string name="label_confirm_payment">CONFIRMAR PAGO</string>
+    <string name="label_payment_address">DIRECCIÓN DE PAGO</string>
+    <string name="label_regtest_instructions_title">⚙ INSTRUCCIONES REGTEST</string>
+    <string name="msg_regtest_cmd">Pega en tu terminal para simular el pago:\n\nbitcoin-cli generatetoaddress 1 %1$s</string>
+    <string name="btn_confirm_test_payment">⚙ Confirmar pago (modo prueba)</string>
+    <string name="btn_cancel_payment">Cancelar</string>
+    <string name="label_fetching_address">⏳ Obteniendo dirección…</string>
+    <string name="label_waiting_confirmation">Esperando confirmación…</string>
+    <string name="label_payment_sent">PAGO ENVIADO</string>
+    <string name="label_payment_sent_subtitle">Pago confirmado en la red Bitcoin</string>
+    <string name="btn_new_scan">⚡ Nuevo pago</string>
+    <string name="error_no_btc_address">No se encontró dirección BTC on-chain en la factura</string>
+    <string name="error_payment_methods_fetch">Error al obtener métodos de pago (HTTP %1$d)</string>
+    <string name="msg_address_copied">Dirección copiada. Ejecuta:\nbitcoin-cli generatetoaddress 1 %1$s</string>
+</resources>
