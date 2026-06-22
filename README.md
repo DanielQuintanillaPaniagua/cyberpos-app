@@ -34,11 +34,11 @@ Se conecta a tu propio **BTCPay Server** para generar facturas reales, mostrar e
 
 | Login | Cobros (comerciante) | Historial (comerciante) |
 |:-----:|:-------------------:|:----------------------:|
-| <img src="docs/screenshots/screen_login.png" width="180"/> | <img src="docs/screenshots/screen_comerciante_cobros.png" width="180"/> | <img src="docs/screenshots/screen_comerciante_historial.png" width="180"/> |
+| <img src="screenshots/screen_login.png" width="180"/> | <img src="screenshots/screen_comerciante_cobros.png" width="180"/> | <img src="screenshots/screen_comerciante_historial.png" width="180"/> |
 
 | Ajustes (comerciante) | Pago (cliente) | Historial (cliente) | Ajustes (cliente) |
 |:--------------------:|:--------------:|:-------------------:|:-----------------:|
-| <img src="docs/screenshots/screen_comerciante_ajustes.png" width="130"/> | <img src="docs/screenshots/screen_cliente_pago.png" width="130"/> | <img src="docs/screenshots/screen_cliente_historial.png" width="130"/> | <img src="docs/screenshots/screen_cliente_ajustes.png" width="130"/> |
+| <img src="screenshots/screen_comerciante_ajustes.png" width="130"/> | <img src="screenshots/screen_cliente_pago.png" width="130"/> | <img src="screenshots/screen_cliente_historial.png" width="130"/> | <img src="screenshots/screen_cliente_ajustes.png" width="130"/> |
 
 </div>
 
