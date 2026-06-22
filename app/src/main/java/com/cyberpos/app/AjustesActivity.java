@@ -50,14 +50,20 @@ public class AjustesActivity extends AppCompatActivity {
     }
 
     private void setupSettingsRows() {
-        int[] rowIds = {
-            R.id.rowPerfil, R.id.rowMoneda, R.id.rowPin,
-            R.id.rowBiometria, R.id.rowNotificaciones, R.id.rowIdioma
-        };
-        for (int id : rowIds) {
-            findViewById(id).setOnClickListener(v ->
-                    Toast.makeText(this, R.string.coming_soon, Toast.LENGTH_SHORT).show());
-        }
+        binding.rowPerfil.setOnClickListener(v ->
+            startActivity(new Intent(this, CustomerPerfilActivity.class)));
+        binding.rowMoneda.setOnClickListener(v ->
+            startActivity(new Intent(this, CustomerMonedaActivity.class)));
+        binding.rowPin.setOnClickListener(v ->
+            startActivity(new Intent(this, CustomerPinActivity.class)));
+        binding.rowBiometria.setOnClickListener(v ->
+            startActivity(new Intent(this, CustomerBiometriaActivity.class)));
+        binding.rowNotificaciones.setOnClickListener(v ->
+            startActivity(new Intent(this, CustomerNotificacionesActivity.class)));
+        binding.rowIdioma.setOnClickListener(v ->
+            startActivity(new Intent(this, IdiomaActivity.class)));
+        binding.rowVersion.setOnClickListener(v ->
+            startActivity(new Intent(this, CustomerVersionActivity.class)));
     }
 
     private void setupBottomNav() {

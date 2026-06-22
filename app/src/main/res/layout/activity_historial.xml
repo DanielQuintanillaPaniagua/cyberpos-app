@@ -173,6 +173,20 @@
         </LinearLayout>
     </LinearLayout>
 
+    <!-- Empty state -->
+    <TextView
+        android:id="@+id/tvEmptyState"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fontFamily="monospace"
+        android:gravity="center"
+        android:padding="32dp"
+        android:text="⚡ Aún no tienes pagos registrados"
+        android:textColor="@color/text_secondary"
+        android:textSize="14sp"
+        android:visibility="gone" />
+
     <!-- Transaction list -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"

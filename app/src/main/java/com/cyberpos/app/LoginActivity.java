@@ -50,7 +50,7 @@ public class LoginActivity extends AppCompatActivity {
                 .addOnSuccessListener(result -> routeByRole())
                 .addOnFailureListener(e -> {
                     setLoading(false);
-                    Toast.makeText(this, getString(R.string.login_failed, e.getMessage()), Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, R.string.login_failed_generic, Toast.LENGTH_LONG).show();
                 });
     }
 
@@ -86,7 +86,7 @@ public class LoginActivity extends AppCompatActivity {
                 .addOnSuccessListener(unused ->
                         Toast.makeText(this, R.string.forgot_password_sent, Toast.LENGTH_LONG).show())
                 .addOnFailureListener(e ->
-                        Toast.makeText(this, getString(R.string.login_failed, e.getMessage()), Toast.LENGTH_LONG).show());
+                        Toast.makeText(this, R.string.forgot_password_sent, Toast.LENGTH_LONG).show());
     }
 
     private boolean validateInputs(String email, String password) {

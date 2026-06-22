@@ -461,10 +461,14 @@
                     android:layout_marginStart="48dp"
                     android:background="@color/surface" />
 
-                <!-- Version (non-clickable) -->
+                <!-- Version -->
                 <LinearLayout
+                    android:id="@+id/rowVersion"
                     android:layout_width="match_parent"
                     android:layout_height="52dp"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:paddingHorizontal="16dp">

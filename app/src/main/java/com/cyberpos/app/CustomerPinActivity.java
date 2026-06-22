@@ -7,20 +7,19 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.cyberpos.app.databinding.ActivityPinSeguridadBinding;
+import com.cyberpos.app.databinding.ActivityCustomerPinBinding;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.math.BigInteger;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class PinSeguridadActivity extends AppCompatActivity {
+public class CustomerPinActivity extends AppCompatActivity {
 
-    private ActivityPinSeguridadBinding binding;
+    private ActivityCustomerPinBinding binding;
     private FirebaseAuth auth;
     private FirebaseFirestore db;
     private String existingPinHash = null;
@@ -29,7 +28,7 @@ public class PinSeguridadActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        binding = ActivityPinSeguridadBinding.inflate(getLayoutInflater());
+        binding = ActivityCustomerPinBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
         auth = FirebaseAuth.getInstance();
@@ -61,8 +60,8 @@ public class PinSeguridadActivity extends AppCompatActivity {
 
     private void validateAndSave() {
         clearErrors();
-        String pinActual   = text(binding.etPinActual);
-        String pinNuevo    = text(binding.etPinNuevo);
+        String pinActual    = text(binding.etPinActual);
+        String pinNuevo     = text(binding.etPinNuevo);
         String pinConfirmar = text(binding.etPinConfirmar);
 
         if (existingPinHash != null) {
@@ -75,8 +74,17 @@ public class PinSeguridadActivity extends AppCompatActivity {
                 return;
             }
         }
-        if (pinNuevo.length() < 4 || pinNuevo.length() > 6) {
-            binding.tilPinNuevo.setError("El PIN debe tener entre 4 y 6 dígitos");
+
+        if (pinNuevo.length() < 6) {
+            binding.tilPinNuevo.setError("El PIN debe tener al menos 6 dígitos");
+            return;
+        }
+        if (isAllRepeated(pinNuevo)) {
+            binding.tilPinNuevo.setError("No uses dígitos repetidos (ej: 111111)");
+            return;
+        }
+        if (isSimpleSequence(pinNuevo)) {
+            binding.tilPinNuevo.setError("No uses secuencias simples (ej: 123456)");
             return;
         }
         if (!pinNuevo.equals(pinConfirmar)) {
@@ -125,6 +133,25 @@ public class PinSeguridadActivity extends AppCompatActivity {
                 Toast.makeText(this, "Error al guardar el PIN. Intenta de nuevo.",
                     Toast.LENGTH_SHORT).show();
             });
+    }
+
+    private boolean isAllRepeated(String pin) {
+        char first = pin.charAt(0);
+        for (int i = 1; i < pin.length(); i++) {
+            if (pin.charAt(i) != first) return false;
+        }
+        return true;
+    }
+
+    private boolean isSimpleSequence(String pin) {
+        boolean asc = true, desc = true;
+        for (int i = 1; i < pin.length(); i++) {
+            int cur  = pin.charAt(i) - '0';
+            int prev = pin.charAt(i - 1) - '0';
+            if (cur != prev + 1) asc  = false;
+            if (cur != prev - 1) desc = false;
+        }
+        return asc || desc;
     }
 
     private void clearErrors() {

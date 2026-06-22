@@ -46,8 +46,8 @@ public class PaymentActivity extends AppCompatActivity {
     private double btcUsdRate = 0;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
-    private String currentInvoiceId;
-    private String firestoreDocId;
+    private volatile String currentInvoiceId;
+    private volatile String firestoreDocId;
     private volatile boolean pollingStopped = true;
 
     private final Runnable pollRunnable = this::doPollOnThread;
@@ -145,7 +145,7 @@ public class PaymentActivity extends AppCompatActivity {
         double amount;
         try {
             amount = Double.parseDouble(amountStr);
-            if (amount <= 0) throw new NumberFormatException();
+            if (amount <= 0 || amount > 50_000) throw new NumberFormatException();
         } catch (NumberFormatException e) {
             binding.tilAmount.setError(getString(R.string.error_amount_invalid));
             return;
@@ -163,8 +163,6 @@ public class PaymentActivity extends AppCompatActivity {
             try {
                 String endpoint = BTCPAY_URL + "/api/v1/stores/" + BTCPAY_STORE_ID + "/invoices";
                 Log.d(TAG, "POST " + endpoint);
-                Log.d(TAG, "Headers: Authorization=token " + BTCPAY_API_KEY
-                        + ", Content-Type=application/json");
 
                 URL url = new URL(endpoint);
                 conn = (HttpURLConnection) url.openConnection();
@@ -181,7 +179,6 @@ public class PaymentActivity extends AppCompatActivity {
                         .put("currency", "USD")
                         .put("metadata", new JSONObject().put("itemDesc", safeDesc))
                         .toString();
-                Log.d(TAG, "Request body: " + body);
                 conn.getOutputStream().write(body.getBytes("UTF-8"));
 
                 int code = conn.getResponseCode();

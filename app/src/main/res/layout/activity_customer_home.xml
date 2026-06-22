@@ -598,9 +598,8 @@
 
         </LinearLayout>
 
-        <!-- ── Payment confirm overlay ──────────────────────────────────────
-             Shows destination address and regtest instructions.
-             Appears after tapping PAGAR AHORA on a BTCPay invoice.     -->
+        <!-- ── Payment waiting overlay ─────────────────────────────────────
+             Shown after PAGAR AHORA: wallet is opened, app polls BTCPay. -->
         <LinearLayout
             android:id="@+id/layoutPaymentConfirm"
             android:layout_width="match_parent"
@@ -622,6 +621,7 @@
                     android:orientation="vertical"
                     android:padding="24dp">
 
+                    <!-- ESPERANDO PAGO badge -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -631,8 +631,8 @@
                         android:fontFamily="monospace"
                         android:paddingHorizontal="10dp"
                         android:paddingVertical="3dp"
-                        android:text="@string/label_regtest_mode"
-                        android:textColor="@color/text_secondary"
+                        android:text="ESPERANDO PAGO"
+                        android:textColor="@color/neon_green"
                         android:textSize="10sp" />
 
                     <TextView
@@ -640,7 +640,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="4dp"
                         android:fontFamily="monospace"
-                        android:text="@string/label_confirm_payment"
+                        android:text="Confirmar pago"
                         android:textColor="@color/text_primary"
                         android:textSize="22sp"
                         android:textStyle="bold" />
@@ -666,37 +666,37 @@
                         android:textColor="@color/text_secondary"
                         android:textSize="14sp" />
 
-                    <!-- Destination address card -->
+                    <!-- Waiting status card -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="12dp"
                         android:background="@drawable/bg_wallet_card"
+                        android:gravity="center_horizontal"
                         android:orientation="vertical"
-                        android:padding="16dp">
+                        android:padding="20dp">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginBottom="8dp"
-                            android:fontFamily="monospace"
-                            android:text="@string/label_payment_address"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="10sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/tvConfirmAddress"
+                        <ProgressBar
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:layout_marginBottom="12dp"
+                            android:indeterminate="true"
+                            android:indeterminateTint="@color/neon_green"
+                            style="?android:attr/progressBarStyleHorizontal" />
+
+                        <TextView
+                            android:id="@+id/tvPaymentStatus"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
                             android:fontFamily="monospace"
-                            android:textColor="@color/neon_green"
-                            android:textIsSelectable="true"
-                            android:textSize="12sp" />
+                            android:gravity="center"
+                            android:text="Esperando confirmación de pago..."
+                            android:textColor="@color/text_secondary"
+                            android:textSize="13sp" />
 
                     </LinearLayout>
 
-                    <!-- Regtest instructions card -->
+                    <!-- Info tip card -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -707,28 +707,28 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginBottom="8dp"
+                            android:layout_marginBottom="6dp"
                             android:fontFamily="monospace"
-                            android:text="@string/label_regtest_instructions_title"
+                            android:text="💡 CÓMO PAGAR"
                             android:textColor="@color/text_secondary"
                             android:textSize="10sp"
                             android:textStyle="bold" />
 
                         <TextView
-                            android:id="@+id/tvRegtestInstructions"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:fontFamily="monospace"
+                            android:lineSpacingMultiplier="1.4"
+                            android:text="Tu wallet Bitcoin se abrirá automáticamente para completar el pago. La app detectará la confirmación en cuanto el pago sea procesado."
                             android:textColor="@color/text_secondary"
-                            android:textIsSelectable="true"
-                            android:textSize="11sp" />
+                            android:textSize="12sp" />
 
                     </LinearLayout>
 
                 </LinearLayout>
             </androidx.core.widget.NestedScrollView>
 
-            <!-- Fixed bottom buttons -->
+            <!-- Abrir wallet button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnConfirmTestPayment"
                 style="@style/Widget.CyberPOS.Button.Primary"
@@ -736,7 +736,7 @@
                 android:layout_height="56dp"
                 android:layout_marginHorizontal="16dp"
                 android:layout_marginTop="8dp"
-                android:text="@string/btn_confirm_test_payment"
+                android:text="Abrir wallet"
                 android:textSize="13sp" />
 
             <com.google.android.material.button.MaterialButton

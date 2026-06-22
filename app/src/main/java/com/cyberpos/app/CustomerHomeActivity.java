@@ -1,19 +1,14 @@
 package com.cyberpos.app;
 
 /*
- * TEMPORARY: The "Confirmar pago (modo prueba)" button simulates payment for
- * regtest testing only. It copies the on-chain destination address to the
- * clipboard and instructs the developer to mine a block to that address via
- * bitcoin-cli. A production version must replace this with a real Lightning
- * wallet integration (e.g. LND, Phoenix, Breez SDK) that can sign and
- * broadcast a transaction directly from the app without manual intervention.
+ * Payment flow: customer scans a BTCPay checkout URL → app fetches invoice details
+ * and payment-methods → opens the paymentLink URI in a Bitcoin wallet app via
+ * Intent.ACTION_VIEW → polls BTCPay every 3 s until status == Settled.
+ *
+ * If no wallet is installed, shows a dialog offering Muun or Phoenix on Play Store.
  */
 
 import android.Manifest;
-import android.content.ClipData;
-import android.util.Log;
-import android.content.ClipboardManager;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -23,10 +18,12 @@ import android.os.Looper;
 import android.provider.Settings;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -57,12 +54,17 @@ public class CustomerHomeActivity extends AppCompatActivity {
     private static final double WALLET_BTC = 0.00150000;
     private static final long POLL_INTERVAL_MS = 3_000L;
 
+    private static final String PLAY_STORE_MUUN   = "market://details?id=net.muun.apollo";
+    private static final String PLAY_STORE_PHOENIX = "market://details?id=fr.acinq.phoenix.mainnet";
+
     private enum PaymentType { LIGHTNING, BITCOIN_ONCHAIN, BTCPAY_INVOICE }
 
     private static final Pattern BOLT11_AMOUNT =
             Pattern.compile("^ln(?:bc|tb|bcrt)(\\d+)([munp])?1", Pattern.CASE_INSENSITIVE);
     private static final Pattern BTCPAY_CHECKOUT_URL =
             Pattern.compile("^https?://[^/]+/i/([^/?&#]+)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern INVOICE_ID_VALID =
+            Pattern.compile("^[A-Za-z0-9_-]{1,64}$");
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
@@ -73,13 +75,13 @@ public class CustomerHomeActivity extends AppCompatActivity {
     // ── Scanner state ────────────────────────────────────────────────────────
     private boolean scannerResumed = false;
     private double btcUsdRate = 0;
-    private String scannedInvoice = null;
+    private volatile String scannedInvoice = null;  // read from polling thread
     private double scannedBtcAmount = 0;
     private PaymentType scannedType = null;
     private double pendingBtcPayUsd = 0;
 
     // ── Payment flow state ───────────────────────────────────────────────────
-    private String paymentDestAddress = null;
+    private String paymentLink = null;
     private volatile boolean pollingStopped = true;
     private String paymentFirestoreDocId = null;
     private final Runnable invoicePollRunnable = this::pollInvoiceStatusOnThread;
@@ -204,7 +206,8 @@ public class CustomerHomeActivity extends AppCompatActivity {
     // ── Payment confirm / sent screens ────────────────────────────────────────
 
     private void setupPaymentConfirmScreen() {
-        binding.btnConfirmTestPayment.setOnClickListener(v -> onConfirmTestPayment());
+        // Abrir wallet: re-open the wallet app if user closed it before paying
+        binding.btnConfirmTestPayment.setOnClickListener(v -> openWalletIntent());
         binding.btnCancelPayment.setOnClickListener(v -> onCancelPayment());
         binding.btnNewScan.setOnClickListener(v -> resetToScanning());
     }
@@ -223,7 +226,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
 
         String uid = auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : null;
         if (uid == null) {
-            fetchPaymentAddress(scannedInvoice, "Cliente", "");
+            fetchPaymentLink(scannedInvoice, "Cliente", "");
             return;
         }
 
@@ -232,13 +235,13 @@ public class CustomerHomeActivity extends AppCompatActivity {
                 .addOnSuccessListener(doc -> {
                     String name = doc.getString("fullName");
                     if (name == null || name.isEmpty()) name = "Cliente";
-                    fetchPaymentAddress(scannedInvoice, name, uid);
+                    fetchPaymentLink(scannedInvoice, name, uid);
                 })
                 .addOnFailureListener(e ->
-                        fetchPaymentAddress(scannedInvoice, "Cliente", uid));
+                        fetchPaymentLink(scannedInvoice, "Cliente", uid));
     }
 
-    private void fetchPaymentAddress(String invoiceId, String customerName, String payerUid) {
+    private void fetchPaymentLink(String invoiceId, String customerName, String payerUid) {
         new Thread(() -> {
             HttpURLConnection conn = null;
             try {
@@ -254,23 +257,37 @@ public class CustomerHomeActivity extends AppCompatActivity {
                 if (code == 200) {
                     JSONArray methods = new JSONArray(readStream(conn.getInputStream()));
                     String destAddress = null;
+                    String link = null;
+
                     for (int i = 0; i < methods.length(); i++) {
                         JSONObject m = methods.getJSONObject(i);
                         if ("BTC-CHAIN".equalsIgnoreCase(m.optString("paymentMethodId", ""))) {
                             String addr = m.optString("destination", null);
                             if (addr != null && !addr.isEmpty()) {
                                 destAddress = addr;
+                                link = m.optString("paymentLink", null);
                                 break;
                             }
                         }
                     }
-                    final String finalAddr = destAddress;
+
+                    // Fallback: build paymentLink from destination address if API didn't return one
+                    if ((link == null || link.isEmpty()) && destAddress != null) {
+                        link = "bitcoin:" + destAddress;
+                        if (scannedBtcAmount > 0) {
+                            link += "?amount=" + String.format(Locale.US, "%.8f", scannedBtcAmount);
+                        }
+                    }
+
+                    final String finalLink = link;
                     mainHandler.post(() -> {
                         if (isFinishing() || isDestroyed()) return;
-                        if (finalAddr != null) {
-                            paymentDestAddress = finalAddr;
+                        if (finalLink != null) {
+                            paymentLink = finalLink;
                             savePayerInfoToFirestore(invoiceId, customerName, payerUid);
-                            showPaymentConfirm(finalAddr, scannedBtcAmount);
+                            showWaitingForPayment(scannedBtcAmount);
+                            openWalletIntent();
+                            startPolling();
                         } else {
                             resetPayButton();
                             Toast.makeText(this, R.string.error_no_btc_address,
@@ -288,7 +305,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
                     });
                 }
             } catch (Exception e) {
-                Log.e("BTCPay", "fetchPaymentAddress exception", e);
+                Log.e("BTCPay", "fetchPaymentLink exception", e);
                 final String msg = e.getMessage();
                 mainHandler.post(() -> {
                     if (isFinishing() || isDestroyed()) return;
@@ -302,6 +319,60 @@ public class CustomerHomeActivity extends AppCompatActivity {
             }
         }).start();
     }
+
+    // ── Wallet intent ─────────────────────────────────────────────────────────
+
+    private void openWalletIntent() {
+        if (paymentLink == null) return;
+        Uri uri;
+        try {
+            uri = Uri.parse(paymentLink);
+        } catch (Exception e) {
+            Toast.makeText(this, "Enlace de pago inválido", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        // Only allow the bitcoin: scheme — reject intent://, javascript:, etc.
+        String scheme = uri.getScheme();
+        if (!"bitcoin".equalsIgnoreCase(scheme)) {
+            Toast.makeText(this, "Enlace de pago inválido", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, uri)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        } catch (android.content.ActivityNotFoundException e) {
+            showNoWalletDialog();
+        }
+    }
+
+    private void showNoWalletDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("Wallet no encontrada")
+                .setMessage("Necesitás una wallet Bitcoin instalada para completar el pago. "
+                        + "Te recomendamos Muun Wallet o Phoenix.")
+                .setPositiveButton("Instalar Muun", (d, w) -> openPlayStore(PLAY_STORE_MUUN))
+                .setNeutralButton("Instalar Phoenix", (d, w) -> openPlayStore(PLAY_STORE_PHOENIX))
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
+    private void openPlayStore(String uri) {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(uri))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        } catch (android.content.ActivityNotFoundException e) {
+            // Fallback: web Play Store URL
+            String webUrl = uri.replace("market://details?id=",
+                    "https://play.google.com/store/apps/details?id=");
+            try {
+                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(webUrl)));
+            } catch (Exception ex) {
+                Toast.makeText(this, "No se pudo abrir la Play Store", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    // ── Firestore ─────────────────────────────────────────────────────────────
 
     private void savePayerInfoToFirestore(String invoiceId, String customerName, String payerUid) {
         db.collection("payments")
@@ -319,7 +390,9 @@ public class CustomerHomeActivity extends AppCompatActivity {
                 });
     }
 
-    private void showPaymentConfirm(String address, double btcAmount) {
+    // ── Waiting overlay ───────────────────────────────────────────────────────
+
+    private void showWaitingForPayment(double btcAmount) {
         binding.tvConfirmBtcAmount.setText(
                 String.format(Locale.US, "%.8f BTC", btcAmount));
         if (btcUsdRate > 0) {
@@ -328,36 +401,16 @@ public class CustomerHomeActivity extends AppCompatActivity {
         } else {
             binding.tvConfirmUsd.setText("");
         }
-        binding.tvConfirmAddress.setText(address);
-        binding.tvRegtestInstructions.setText(
-                getString(R.string.msg_regtest_cmd, address));
-
+        binding.tvPaymentStatus.setText("Esperando confirmación de pago...");
+        binding.btnConfirmTestPayment.setText("Abrir wallet");
         binding.btnPayNow.setText(R.string.btn_pay_now);
         binding.btnPayNow.setEnabled(true);
-        binding.btnConfirmTestPayment.setEnabled(true);
-        binding.btnConfirmTestPayment.setText(R.string.btn_confirm_test_payment);
         binding.layoutPaymentConfirm.setVisibility(View.VISIBLE);
-    }
-
-    private void onConfirmTestPayment() {
-        if (paymentDestAddress == null) return;
-
-        ClipboardManager cm = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-        cm.setPrimaryClip(ClipData.newPlainText("btc_address", paymentDestAddress));
-        Toast.makeText(this,
-                getString(R.string.msg_address_copied, paymentDestAddress),
-                Toast.LENGTH_LONG).show();
-
-        binding.btnConfirmTestPayment.setEnabled(false);
-        binding.btnConfirmTestPayment.setText(R.string.label_waiting_confirmation);
-        startPolling();
     }
 
     private void onCancelPayment() {
         stopPolling();
-        paymentDestAddress = null;
-        binding.btnConfirmTestPayment.setEnabled(true);
-        binding.btnConfirmTestPayment.setText(R.string.btn_confirm_test_payment);
+        paymentLink = null;
         binding.layoutPaymentConfirm.setVisibility(View.GONE);
     }
 
@@ -393,7 +446,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
                 final String finalStatus = status;
                 mainHandler.post(() -> {
                     if (isFinishing() || isDestroyed()) return;
-                    if ("Settled".equals(finalStatus)) {
+                    if ("Settled".equals(finalStatus) || "Complete".equals(finalStatus)) {
                         onPaymentSettled();
                     } else if (!pollingStopped) {
                         mainHandler.postDelayed(invoicePollRunnable, POLL_INTERVAL_MS);
@@ -510,7 +563,6 @@ public class CustomerHomeActivity extends AppCompatActivity {
     // ── QR dispatch ───────────────────────────────────────────────────────────
 
     private void handleScannedQr(String raw) {
-        Toast.makeText(this, "QR: " + raw, Toast.LENGTH_LONG).show();
         String input = raw.trim();
         String lower = input.toLowerCase(Locale.US);
 
@@ -595,6 +647,11 @@ public class CustomerHomeActivity extends AppCompatActivity {
     // ── BTCPay checkout URL ───────────────────────────────────────────────────
 
     private void handleBtcPayUrl(String invoiceId) {
+        if (!INVOICE_ID_VALID.matcher(invoiceId).matches()) {
+            Toast.makeText(this, R.string.error_invalid_qr, Toast.LENGTH_SHORT).show();
+            resumeScannerIfPermitted();
+            return;
+        }
         scannedType = PaymentType.BTCPAY_INVOICE;
         pendingBtcPayUsd = 0;
 
@@ -724,7 +781,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
 
     private void resetToScanning() {
         stopPolling();
-        paymentDestAddress = null;
+        paymentLink = null;
         paymentFirestoreDocId = null;
 
         scannedInvoice = null;
@@ -740,8 +797,6 @@ public class CustomerHomeActivity extends AppCompatActivity {
         binding.tvUsdEquivalent.setText(R.string.label_usd_equivalent);
         binding.btnPayNow.setText(R.string.btn_pay_now);
         binding.btnPayNow.setEnabled(false);
-        binding.btnConfirmTestPayment.setEnabled(true);
-        binding.btnConfirmTestPayment.setText(R.string.btn_confirm_test_payment);
         resumeScannerIfPermitted();
     }
 
@@ -768,6 +823,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
             resumeScannerIfPermitted();
         }
         PriceService.get().addListener(priceListener);
+        // Resume polling if user comes back from wallet app and payment is still pending
         if (!pollingStopped && scannedInvoice != null) {
             mainHandler.postDelayed(invoicePollRunnable, POLL_INTERVAL_MS);
         }

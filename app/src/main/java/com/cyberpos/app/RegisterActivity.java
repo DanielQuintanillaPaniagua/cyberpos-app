@@ -75,7 +75,7 @@ public class RegisterActivity extends AppCompatActivity {
                 })
                 .addOnFailureListener(e -> {
                     setLoading(false);
-                    Toast.makeText(this, getString(R.string.register_failed, e.getMessage()), Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, R.string.register_failed_generic, Toast.LENGTH_LONG).show();
                 });
     }
 

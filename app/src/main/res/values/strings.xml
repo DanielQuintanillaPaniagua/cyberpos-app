@@ -12,6 +12,7 @@
     <string name="hint_password">Contraseña</string>
     <string name="btn_login">Ingresar</string>
     <string name="login_failed">Error al iniciar sesión: %1$s</string>
+    <string name="login_failed_generic">Correo o contraseña incorrectos</string>
     <string name="error_email_required">Ingresa tu correo</string>
     <string name="error_password_length">La contraseña debe tener al menos 6 caracteres</string>
     <string name="link_create_account">¿No tienes cuenta? Crear cuenta</string>
@@ -27,6 +28,7 @@
     <string name="btn_create_account">Crear cuenta</string>
     <string name="link_have_account">¿Ya tienes cuenta? Ingresar</string>
     <string name="register_failed">Error al registrarse: %1$s</string>
+    <string name="register_failed_generic">No se pudo crear la cuenta. Verifica los datos e intenta de nuevo.</string>
     <string name="register_success">¡Bienvenido a CyberPOS!</string>
     <string name="error_business_name_required">Ingresa el nombre del negocio</string>
     <string name="error_full_name_required">Ingresa tu nombre completo</string>

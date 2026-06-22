@@ -1,23 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Currency icon colors -->
+    <color name="btc_orange">#F7931A</color>
+    <color name="eur_blue">#2196F3</color>
+
     <!-- Brand palette -->
     <color name="neon_green">#39FF14</color>
     <color name="neon_green_dark">#28CC0F</color>
     <color name="neon_green_alpha30">#4D39FF14</color>
 
-    <!-- Backgrounds -->
-    <color name="background">#0A0A0A</color>
-    <color name="surface">#141414</color>
-    <color name="surface_variant">#1E1E1E</color>
+    <!-- Backgrounds (light mode — dark overrides in values-night/colors.xml) -->
+    <color name="background">#F5F5F5</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_variant">#E8E8E8</color>
 
     <!-- Text -->
-    <color name="text_primary">#FFFFFF</color>
-    <color name="text_secondary">#9E9E9E</color>
-    <color name="text_on_neon">#0A0A0A</color>
+    <color name="text_primary">#121212</color>
+    <color name="text_secondary">#757575</color>
+    <color name="text_on_neon">#000000</color>
 
     <!-- Status -->
-    <color name="error">#FF5252</color>
-    <color name="error_container">#3D1010</color>
+    <color name="error">#D32F2F</color>
+    <color name="error_container">#FFCDD2</color>
 
     <!-- Material theme mappings -->
     <color name="colorPrimary">@color/neon_green</color>
