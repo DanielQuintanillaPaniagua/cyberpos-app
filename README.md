@@ -8,6 +8,7 @@
 [![Platform](https://img.shields.io/badge/Platform-Android-brightgreen.svg)](https://android.com)
 [![Bitcoin](https://img.shields.io/badge/Bitcoin-Lightning%20%7C%20On--Chain-orange.svg)](https://bitcoin.org)
 [![BTCPay](https://img.shields.io/badge/BTCPay-Server-blue.svg)](https://btcpayserver.org)
+[![Version](https://img.shields.io/badge/Version-v2.0.0--beta-purple.svg)](https://github.com/DanielQuintanillaPaniagua/cyberpos-app/releases)
 [![Made in El Salvador](https://img.shields.io/badge/Hecho%20en-El%20Salvador%20🇸🇻-blue.svg)](https://github.com/DanielQuintanillaPaniagua/cyberpos-app)
 
 > *"Don't trust, verify."* — código abierto, auditable, sin custodios.
@@ -51,6 +52,9 @@ Se conecta a tu propio **BTCPay Server** para generar facturas reales, mostrar e
 - 📱 QR de pago en pantalla con precio BTC/USD en tiempo real (CoinGecko)
 - ✅ Confirmación automática de pago por polling
 - 📊 Historial completo de transacciones desde Firestore
+- 📄 **Reportes exportables en PDF y CSV** con filtros por fecha
+- 🖨️ **Impresión térmica Bluetooth** vía protocolo ESC/POS
+- 📡 **NFC tap-to-pay** — cliente acerca el teléfono y recibe el URI de pago
 - 🔧 Configuración completa de BTCPay desde la app (URL, API Key, Store ID)
 - 🎨 Personalización de pantalla de cobro (logo, color, mensaje, expiración del QR)
 - 🏦 Gestión de cuentas bancarias e impuestos (IVA, ISR)
@@ -80,7 +84,19 @@ Se conecta a tu propio **BTCPay Server** para generar facturas reales, mostrar e
 | Precio BTC | CoinGecko API (tiempo real) |
 | QR Scanner | ZXing |
 | HTTP | OkHttp |
+| Reportes | iText7 (PDF), CSV nativo |
+| Impresión | ESCPOS-ThermalPrinter (Bluetooth ESC/POS) |
+| NFC | Android NFC API (nativo) |
 | Seguridad | EncryptedSharedPreferences (AndroidX Security) |
+
+---
+
+## Hardware compatible
+
+### Impresoras térmicas Bluetooth
+- Cualquier impresora con protocolo **ESC/POS** vía Bluetooth
+- Rango de precio: $15-30 USD (disponibles en AliExpress)
+- Probado con: *contribuciones bienvenidas — abre un Issue con tu modelo*
 
 ---
 
@@ -132,7 +148,23 @@ Accedé al dashboard en: `http://localhost:14142`
 
 > Incluye: PostgreSQL 13, Bitcoin Core v25.0 (regtest), NBXplorer 2.5.0, BTCPay Server 2.0.0
 
-### 4. Actualizar IP automáticamente (script PowerShell)
+### 4. Minar bloques iniciales en regtest ⚠️
+
+**Paso obligatorio.** Sin bloques minados BTCPay no puede procesar pagos en regtest.
+
+```bash
+# Obtener dirección del wallet
+docker exec btcpayserver-bitcoin-1 bitcoin-cli \
+  -regtest -rpcuser=cyberpos -rpcpassword=cyberpos123 \
+  getnewaddress
+
+# Minar 101 bloques (reemplazá  con la dirección obtenida)
+docker exec btcpayserver-bitcoin-1 bitcoin-cli \
+  -regtest -rpcuser=cyberpos -rpcpassword=cyberpos123 \
+  generatetoaddress 101 
+```
+
+### 5. Actualizar IP automáticamente (script PowerShell)
 
 Si tu IP local cambia entre sesiones, corrés este script en PowerShell como administrador:
 
@@ -143,23 +175,23 @@ cd C:\ruta\al\proyecto
 
 Detecta tu IP de Wi-Fi activa y actualiza `BTCPAY_URL` en `local.properties` automáticamente.
 
-### 5. Compilar y correr
+### 6. Compilar y correr
 
 Abrí el proyecto en Android Studio, sincronizá con Gradle y correlo en un emulador o dispositivo físico.
 
 ---
 
 ## Arquitectura
-
-```
 cyberpos-app/
 ├── app/src/main/java/com/cyberpos/app/
 │   ├── activities/
 │   │   ├── auth/          # Login, Register
-│   │   ├── merchant/      # PaymentActivity, MerchantHistorial, Ajustes (11 pantallas)
+│   │   ├── merchant/      # PaymentActivity, MerchantHistorial, Reportes, Ajustes (11 pantallas)
 │   │   └── customer/      # CustomerHome, HistorialActivity, Ajustes (6 pantallas)
 │   ├── services/
-│   │   └── PriceService   # Precio BTC en tiempo real via CoinGecko
+│   │   ├── PriceService   # Precio BTC en tiempo real via CoinGecko
+│   │   ├── PrintService   # Impresión térmica Bluetooth ESC/POS
+│   │   └── NfcService     # NFC tap-to-pay
 │   └── utils/             # Helpers, constantes
 ├── app/src/main/res/
 │   ├── values/            # Strings en Español (default)
@@ -169,23 +201,20 @@ cyberpos-app/
 │   ├── values-de/         # Deutsch
 │   └── values-it/         # Italiano
 └── docs/
-    └── screenshots/       # Capturas de la app
-```
+└── screenshots/       # Capturas de la app
 
 **Persistencia Firestore:**
-```
 users/{uid}/
 ├── negocio/datos          # Información del negocio
 ├── cuentas_bancarias/     # Cuentas bancarias (subcolección)
 ├── transacciones/         # Historial de pagos
 └── configuracion/
-    ├── moneda
-    ├── notificaciones
-    ├── pantalla_cobro     # Incluye logo como Base64
-    ├── pin                # Hash SHA-256
-    ├── dos_fa
-    └── biometria
-```
+├── moneda
+├── notificaciones
+├── pantalla_cobro     # Incluye logo como Base64
+├── pin                # Hash SHA-256
+├── dos_fa
+└── biometria
 
 ---
 
@@ -199,10 +228,13 @@ users/{uid}/
 - [x] Onboarding para nuevos comerciantes
 - [x] Configuración de BTCPay desde la app
 - [x] Modo demo con badge DEMO
+- [x] Reportes exportables PDF/CSV
+- [x] Impresión térmica Bluetooth (ESC/POS)
+- [x] NFC tap-to-pay
 - [ ] ⚡ Lightning Network real (LND)
-- [ ] NFC para pagos contactless
-- [ ] Exportar historial a CSV/PDF
+- [ ] LNURL-pay — QR estático permanente
 - [ ] Widget de Android para precio BTC en tiempo real
+- [ ] Categorías de productos e inventario básico
 
 ---
 
@@ -221,16 +253,12 @@ Reportá bugs o sugerencias en [GitHub Issues](https://github.com/DanielQuintani
 ---
 
 ## Licencia
-
-```
 CyberPOS — Bitcoin POS para pequeños negocios
 Copyright (C) 2026 Daniel Quintanilla Paniagua
-
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
-```
 
 Licencia completa: [LICENSE](LICENSE) — GPL v3
 
@@ -245,3 +273,4 @@ Licencia completa: [LICENSE](LICENSE) — GPL v3
 [GitHub](https://github.com/DanielQuintanillaPaniagua/cyberpos-app) · [Issues](https://github.com/DanielQuintanillaPaniagua/cyberpos-app/issues) · [GPL v3](https://www.gnu.org/licenses/gpl-3.0)
 
 </div>
+
