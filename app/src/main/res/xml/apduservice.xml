@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<host-apdu-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/nfc_service_desc"
+    android:requireDeviceUnlock="false">
+
+    <!--
+        AID D2760000850101 = NDEF Application (ISO 7816-4 Type 4 Tag)
+        This lets the phone act as an NFC tag that any NFC reader/wallet can tap.
+    -->
+    <aid-group
+        android:category="other"
+        android:description="@string/nfc_service_desc">
+        <aid-filter android:name="D2760000850101" />
+    </aid-group>
+
+</host-apdu-service>

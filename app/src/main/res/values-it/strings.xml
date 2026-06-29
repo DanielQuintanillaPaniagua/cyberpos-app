@@ -133,6 +133,23 @@
     <string name="msg_saved_success">Modifiche salvate</string>
     <string name="msg_save_error">Errore nel salvataggio: %1$s</string>
 
+    <string name="title_reportes">RAPPORTI</string>
+    <string name="subtitle_reportes">Esporta le tue transazioni</string>
+    <string name="label_period">PERIODO</string>
+    <string name="filter_today">OGGI</string>
+    <string name="filter_week">SETTIMANA</string>
+    <string name="filter_month">MESE</string>
+    <string name="filter_custom">PERSONALIZZATO</string>
+    <string name="btn_from">Da</string>
+    <string name="btn_to">A</string>
+    <string name="btn_export_pdf">Esporta PDF</string>
+    <string name="btn_export_csv">Esporta CSV</string>
+    <string name="msg_no_report_transactions">Nessuna transazione in questo periodo</string>
+    <string name="msg_generating_report">Creazione rapporto…</string>
+    <string name="error_export_report">Errore nella creazione del file</string>
+    <string name="msg_share_report">Condividi rapporto</string>
+    <string name="settings_reports">Rapporti</string>
+
     <string name="label_role_merchant">Commerciante</string>
     <string name="section_my_business">LA MIA ATTIVITÀ</string>
     <string name="settings_business_info">Informazioni attività</string>

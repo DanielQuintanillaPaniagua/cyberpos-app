@@ -244,6 +244,37 @@
                     android:textSize="13sp"
                     android:visibility="gone" />
 
+                <!-- NFC indicator — visible only when HCE is active -->
+                <LinearLayout
+                    android:id="@+id/layoutNfcBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:background="@drawable/bg_wallet_card"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="14dp"
+                    android:paddingVertical="7dp"
+                    android:visibility="gone">
+
+                    <View
+                        android:id="@+id/viewNfcDot"
+                        android:layout_width="7dp"
+                        android:layout_height="7dp"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/bg_logo_circle" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="monospace"
+                        android:text="@string/label_nfc_active"
+                        android:textColor="@color/neon_green"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                </LinearLayout>
+
             </LinearLayout>
         </ScrollView>
 
@@ -289,11 +320,24 @@
                 android:textSize="13sp" />
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPrintReceipt"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="48dp"
+                android:fontFamily="monospace"
+                android:text="@string/btn_print_receipt"
+                android:textSize="14sp"
+                app:cornerRadius="4dp"
+                app:strokeColor="@color/neon_green"
+                app:strokeWidth="1dp" />
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnNewPayment"
                 style="@style/Widget.CyberPOS.Button.Primary"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
-                android:layout_marginTop="48dp"
+                android:layout_marginTop="12dp"
                 android:text="@string/btn_new_payment_reset" />
 
         </LinearLayout>

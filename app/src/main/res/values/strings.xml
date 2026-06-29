@@ -150,8 +150,49 @@
     <string name="msg_saved_success">Cambios guardados</string>
     <string name="msg_save_error">Error al guardar: %1$s</string>
 
+    <!-- NFC HCE -->
+    <string name="nfc_service_desc">CyberPOS NFC pago</string>
+    <string name="label_nfc_active">NFC ACTIVO — Acerca el celular del cliente</string>
+
+    <!-- BluetoothPrinterActivity -->
+    <string name="settings_printer">Impresora Bluetooth</string>
+    <string name="title_bluetooth_printer">IMPRESORA</string>
+    <string name="subtitle_bluetooth_printer">Recibos por impresora térmica</string>
+    <string name="label_current_printer">IMPRESORA ACTIVA</string>
+    <string name="label_no_printer_configured">Sin impresora configurada</string>
+    <string name="label_paired_devices">DISPOSITIVOS VINCULADOS</string>
+    <string name="label_no_paired_devices">No hay dispositivos Bluetooth vinculados.\nVe a Ajustes → Bluetooth del sistema para emparejar tu impresora.</string>
+    <string name="msg_pair_hint">Empareja primero tu impresora desde\nAjustes → Bluetooth del sistema</string>
+    <string name="msg_printer_saved">Impresora guardada: %1$s</string>
+    <!-- PaymentActivity — print receipt -->
+    <string name="btn_print_receipt">Imprimir recibo</string>
+    <string name="msg_printing">Imprimiendo…</string>
+    <string name="msg_print_success">✓ Recibo impreso</string>
+    <string name="msg_print_error">Error al imprimir: %1$s</string>
+    <string name="msg_no_printer">Configura una impresora en Ajustes → Impresora Bluetooth</string>
+
+    <!-- ReportesActivity -->
+    <string name="title_reportes">REPORTES</string>
+    <string name="subtitle_reportes">Exporta tus transacciones</string>
+    <string name="label_period">PERÍODO</string>
+    <string name="filter_today">HOY</string>
+    <string name="filter_week">SEMANA</string>
+    <string name="filter_month">MES</string>
+    <string name="filter_custom">PERSONALIZADO</string>
+    <string name="btn_from">Desde</string>
+    <string name="btn_to">Hasta</string>
+    <string name="btn_export_pdf">Exportar PDF</string>
+    <string name="btn_export_csv">Exportar CSV</string>
+    <string name="msg_no_report_transactions">Sin transacciones en este período</string>
+    <string name="msg_generating_report">Generando reporte…</string>
+    <string name="error_export_report">Error al generar el archivo</string>
+    <string name="msg_share_report">Compartir reporte</string>
+    <string name="msg_saved_to_downloads">✓ Guardado en Descargas/CyberPOS</string>
+    <string name="action_share">COMPARTIR</string>
+
     <!-- MerchantAjustesActivity -->
     <string name="label_role_merchant">Comerciante</string>
+    <string name="settings_reports">Reportes</string>
     <string name="section_my_business">MI NEGOCIO</string>
     <string name="settings_business_info">Información del negocio</string>
     <string name="settings_bank_accounts">Cuentas bancarias</string>

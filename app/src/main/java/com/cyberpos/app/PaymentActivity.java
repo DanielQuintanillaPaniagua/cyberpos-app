@@ -1,8 +1,29 @@
+/*
+ * CyberPOS — Bitcoin POS para pequeños negocios
+ * Copyright (C) 2026 Daniel Quintanilla Paniagua
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package com.cyberpos.app;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.nfc.NfcAdapter;
 import android.util.Log;
 import android.graphics.Bitmap;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -12,7 +33,10 @@ import android.text.TextWatcher;
 import android.view.View;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.cyberpos.app.databinding.ActivityPaymentBinding;
 import com.cyberpos.app.model.Payment;
@@ -35,6 +59,7 @@ public class PaymentActivity extends AppCompatActivity {
     private static final int QR_SIZE = 600;
     private static final long POLL_INTERVAL_MS = 3_000L;
     private static final String TAG = "BTCPay";
+    private static final int REQ_BT_PRINT = 102;
 
     private static final String BTCPAY_API_KEY  = BuildConfig.BTCPAY_API_KEY;
     private static final String BTCPAY_STORE_ID = BuildConfig.BTCPAY_STORE_ID;
@@ -49,6 +74,18 @@ public class PaymentActivity extends AppCompatActivity {
     private volatile String currentInvoiceId;
     private volatile String firestoreDocId;
     private volatile boolean pollingStopped = true;
+
+    // ES: Capturado cuando se genera un QR — usado para imprimir el recibo
+    // EN: Captured when a QR is generated — used for receipt printing
+    private double currentAmountUsd;
+    private double currentAmountBtc;
+    private String currentDescription;
+    private String merchantBusinessName;
+
+    // ES: NFC HCE (emulación de tarjeta por host)
+    // EN: NFC HCE (host card emulation)
+    private NfcAdapter nfcAdapter;
+    private boolean nfcAvailable;
 
     private final Runnable pollRunnable = this::doPollOnThread;
 
@@ -69,6 +106,11 @@ public class PaymentActivity extends AppCompatActivity {
 
         binding.btnGenerateQr.setOnClickListener(v -> handleGenerateQr());
         binding.btnNewPayment.setOnClickListener(v -> resetToForm());
+        binding.btnPrintReceipt.setOnClickListener(v -> requestPrintWithPermission());
+        loadMerchantName();
+
+        nfcAdapter  = NfcAdapter.getDefaultAdapter(this);
+        nfcAvailable = nfcAdapter != null;
         binding.etAmount.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int i, int i1, int i2) {}
             @Override public void onTextChanged(CharSequence s, int i, int i1, int i2) {}
@@ -132,7 +174,7 @@ public class PaymentActivity extends AppCompatActivity {
         handler.removeCallbacks(pollRunnable);
     }
 
-    // ── Form validation ──────────────────────────────────────────────────────
+    // ── Validación del formulario / Form validation ──────────────────────────
 
     private void handleGenerateQr() {
         String amountStr = binding.etAmount.getText().toString().trim();
@@ -155,7 +197,7 @@ public class PaymentActivity extends AppCompatActivity {
         createBtcPayInvoice(amount, description);
     }
 
-    // ── BTCPay API ────────────────────────────────────────────────────────────
+    // ── BTCPay API / BTCPay API ───────────────────────────────────────────────
 
     private void createBtcPayInvoice(double amount, String description) {
         new Thread(() -> {
@@ -230,20 +272,30 @@ public class PaymentActivity extends AppCompatActivity {
         }).start();
     }
 
-    /** Pulls the human-readable message out of a BTCPay JSON error body, falling back to HTTP code. */
+    /**
+     * ES: Extrae el mensaje legible del cuerpo de error JSON de BTCPay; usa el código HTTP como respaldo.
+     * EN: Pulls the human-readable message out of a BTCPay JSON error body, falling back to HTTP code.
+     */
     private static String extractErrorMessage(String body, int httpCode) {
         try {
             JSONObject json = new JSONObject(body);
-            // BTCPay uses "message" at the top level, sometimes nested under "errors"
+            // ES: BTCPay usa "message" en el nivel superior, a veces anidado bajo "errors"
+            // EN: BTCPay uses "message" at the top level, sometimes nested under "errors"
             if (json.has("message")) return json.getString("message");
         } catch (Exception ignored) {}
         return "HTTP " + httpCode + ": " + body;
     }
 
-    // ── QR generation & polling ───────────────────────────────────────────────
+    // ── Generación de QR y sondeo / QR generation & polling ──────────────────
 
     private void showQrAndStartPolling(String checkoutUrl, double amount,
                                        String description, String invoiceId) {
+        // ES: Capturar datos del pago para el recibo
+        // EN: Capture payment data for receipt
+        currentAmountUsd  = amount;
+        currentAmountBtc  = btcUsdRate > 0 ? amount / btcUsdRate : 0;
+        currentDescription = description;
+
         try {
             BarcodeEncoder encoder = new BarcodeEncoder();
             Bitmap bitmap = encoder.encodeBitmap(
@@ -252,6 +304,13 @@ public class PaymentActivity extends AppCompatActivity {
             binding.ivQrCode.setVisibility(View.VISIBLE);
             binding.tvQrInstructions.setVisibility(View.VISIBLE);
             setLoading(false);
+
+            // ES: Activar NFC HCE para que el cliente pueda tocar y recibir la URI de pago
+        // EN: Activate NFC HCE so customer can tap to receive the payment URI
+            NfcHceService.setPaymentUri(checkoutUrl);
+            if (nfcAvailable && nfcAdapter.isEnabled()) {
+                binding.layoutNfcBadge.setVisibility(View.VISIBLE);
+            }
 
             savePaymentToFirestore(amount, description, checkoutUrl, invoiceId);
             handler.postDelayed(pollRunnable, POLL_INTERVAL_MS);
@@ -299,11 +358,16 @@ public class PaymentActivity extends AppCompatActivity {
         }).start();
     }
 
-    // ── Payment settled ───────────────────────────────────────────────────────
+    // ── Pago confirmado / Payment settled ────────────────────────────────────
 
     private void onPaymentSettled() {
         pollingStopped = true;
         handler.removeCallbacks(pollRunnable);
+
+        // ES: Detener NFC HCE — el pago está completado
+        // EN: Stop NFC HCE — payment is done
+        NfcHceService.setPaymentUri(null);
+        binding.layoutNfcBadge.setVisibility(View.GONE);
 
         if (firestoreDocId != null) {
             db.collection("payments").document(firestoreDocId)
@@ -320,6 +384,11 @@ public class PaymentActivity extends AppCompatActivity {
         currentInvoiceId = null;
         firestoreDocId = null;
 
+        // ES: Limpiar NFC HCE
+        // EN: Clear NFC HCE
+        NfcHceService.setPaymentUri(null);
+        binding.layoutNfcBadge.setVisibility(View.GONE);
+
         binding.layoutPaymentSuccess.setVisibility(View.GONE);
         binding.scrollViewForm.setVisibility(View.VISIBLE);
         binding.ivQrCode.setVisibility(View.GONE);
@@ -329,7 +398,7 @@ public class PaymentActivity extends AppCompatActivity {
         binding.tvBtcEquivalent.setText("≈ — BTC");
     }
 
-    // ── Firestore ─────────────────────────────────────────────────────────────
+    // ── Firestore / Firestore ─────────────────────────────────────────────────
 
     private void savePaymentToFirestore(double amount, String description,
                                         String bolt11, String invoiceId) {
@@ -344,7 +413,75 @@ public class PaymentActivity extends AppCompatActivity {
                         Toast.makeText(this, R.string.error_save_payment, Toast.LENGTH_SHORT).show());
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // ── Nombre del comerciante / Merchant name ───────────────────────────────
+
+    private void loadMerchantName() {
+        if (auth.getCurrentUser() == null) return;
+        db.collection("users").document(auth.getCurrentUser().getUid()).get()
+                .addOnSuccessListener(doc -> {
+                    if (doc.exists()) {
+                        String name = doc.getString("businessName");
+                        if (name == null || name.isEmpty()) name = doc.getString("fullName");
+                        if (name != null && !name.isEmpty()) merchantBusinessName = name;
+                    }
+                });
+    }
+
+    // ── Impresión Bluetooth / Bluetooth printing ──────────────────────────────
+
+    private void requestPrintWithPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.BLUETOOTH_CONNECT}, REQ_BT_PRINT);
+                return;
+            }
+        }
+        doPrint();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int code, @NonNull String[] perms,
+                                            @NonNull int[] results) {
+        super.onRequestPermissionsResult(code, perms, results);
+        if (code == REQ_BT_PRINT && results.length > 0
+                && results[0] == PackageManager.PERMISSION_GRANTED) {
+            doPrint();
+        }
+    }
+
+    private void doPrint() {
+        if (PrinterManager.getSavedPrinterMac(this) == null) {
+            Toast.makeText(this, R.string.msg_no_printer, Toast.LENGTH_LONG).show();
+            return;
+        }
+        Toast.makeText(this, R.string.msg_printing, Toast.LENGTH_SHORT).show();
+        PrinterManager.printReceipt(
+                this,
+                merchantBusinessName,
+                currentDescription,
+                currentAmountUsd,
+                currentAmountBtc,
+                new PrinterManager.PrintCallback() {
+                    @Override public void onSuccess() {
+                        Toast.makeText(PaymentActivity.this,
+                                R.string.msg_print_success, Toast.LENGTH_SHORT).show();
+                    }
+                    @Override public void onError(String msg) {
+                        if ("no_printer".equals(msg)) {
+                            Toast.makeText(PaymentActivity.this,
+                                    R.string.msg_no_printer, Toast.LENGTH_LONG).show();
+                        } else {
+                            Toast.makeText(PaymentActivity.this,
+                                    getString(R.string.msg_print_error, msg),
+                                    Toast.LENGTH_LONG).show();
+                        }
+                    }
+                });
+    }
+
+    // ── Utilidades / Helpers ─────────────────────────────────────────────────
 
     private void setLoading(boolean loading) {
         binding.btnGenerateQr.setEnabled(!loading);
