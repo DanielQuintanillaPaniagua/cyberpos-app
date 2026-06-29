@@ -1,3 +1,20 @@
+/*
+ * CyberPOS — Bitcoin POS para pequeños negocios
+ * Copyright (C) 2026 Daniel Quintanilla Paniagua
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package com.cyberpos.app;
 
 import android.content.Context;
@@ -113,7 +130,8 @@ public class CuentasBancariasActivity extends AppCompatActivity {
             card.findViewById(R.id.btnMenu).setOnClickListener(v -> showPopupMenu(v, finalCuenta));
 
             if (i > 0) {
-                // Add separator spacing
+                // ES: Agregar separación entre tarjetas
+                // EN: Add separator spacing
                 View spacer = new View(this);
                 android.widget.LinearLayout.LayoutParams p =
                     new android.widget.LinearLayout.LayoutParams(
@@ -149,7 +167,8 @@ public class CuentasBancariasActivity extends AppCompatActivity {
         if (auth.getCurrentUser() == null) return;
         String uid = auth.getCurrentUser().getUid();
 
-        // Clear principal flag on all, then set on selected
+        // ES: Quitar la marca de principal en todas, luego marcar la seleccionada
+        // EN: Clear principal flag on all, then set on selected
         for (Cuenta c : cuentas) {
             db.collection("users").document(uid).collection("cuentas_bancarias")
                 .document(c.id).update("esPrincipal", c.id.equals(principal.id));
