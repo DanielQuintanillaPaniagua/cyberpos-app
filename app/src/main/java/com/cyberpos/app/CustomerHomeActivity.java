@@ -1,11 +1,34 @@
+/*
+ * CyberPOS — Bitcoin POS para pequeños negocios
+ * Copyright (C) 2026 Daniel Quintanilla Paniagua
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package com.cyberpos.app;
 
 /*
- * Payment flow: customer scans a BTCPay checkout URL → app fetches invoice details
- * and payment-methods → opens the paymentLink URI in a Bitcoin wallet app via
- * Intent.ACTION_VIEW → polls BTCPay every 3 s until status == Settled.
+ * ES: Flujo de pago: el cliente escanea una URL de pago BTCPay → la app obtiene los
+ *     detalles de la factura y los métodos de pago → abre la URI paymentLink en una
+ *     wallet Bitcoin via Intent.ACTION_VIEW → sondea BTCPay cada 3 s hasta Settled.
  *
- * If no wallet is installed, shows a dialog offering Muun or Phoenix on Play Store.
+ *     Si no hay ninguna wallet instalada, muestra un diálogo con Muun o Phoenix.
+ *
+ * EN: Payment flow: customer scans a BTCPay checkout URL → app fetches invoice details
+ *     and payment-methods → opens the paymentLink URI in a Bitcoin wallet app via
+ *     Intent.ACTION_VIEW → polls BTCPay every 3 s until status == Settled.
+ *
+ *     If no wallet is installed, shows a dialog offering Muun or Phoenix on Play Store.
  */
 
 import android.Manifest;
@@ -72,15 +95,15 @@ public class CustomerHomeActivity extends AppCompatActivity {
     private FirebaseAuth auth;
     private FirebaseFirestore db;
 
-    // ── Scanner state ────────────────────────────────────────────────────────
+    // ── Estado del escáner / Scanner state ──────────────────────────────────
     private boolean scannerResumed = false;
     private double btcUsdRate = 0;
-    private volatile String scannedInvoice = null;  // read from polling thread
+    private volatile String scannedInvoice = null;  // ES: leído desde el hilo de sondeo / EN: read from polling thread
     private double scannedBtcAmount = 0;
     private PaymentType scannedType = null;
     private double pendingBtcPayUsd = 0;
 
-    // ── Payment flow state ───────────────────────────────────────────────────
+    // ── Estado del flujo de pago / Payment flow state ───────────────────────
     private String paymentLink = null;
     private volatile boolean pollingStopped = true;
     private String paymentFirestoreDocId = null;
@@ -132,7 +155,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
         requestCameraIfNeeded();
     }
 
-    // ── Tabs ─────────────────────────────────────────────────────────────────
+    // ── Pestañas / Tabs ──────────────────────────────────────────────────────
 
     private void setupTabs() {
         binding.toggleGroup.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
@@ -161,7 +184,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
         binding.toggleGroup.check(R.id.tabScan);
     }
 
-    // ── Amount input (manual tab) ─────────────────────────────────────────────
+    // ── Entrada de monto (pestaña manual) / Amount input (manual tab) ────────
 
     private void setupAmountInput() {
         binding.etBtcAmount.addTextChangedListener(new TextWatcher() {
@@ -197,22 +220,23 @@ public class CustomerHomeActivity extends AppCompatActivity {
         }
     }
 
-    // ── Pay button ────────────────────────────────────────────────────────────
+    // ── Botón de pago / Pay button ───────────────────────────────────────────
 
     private void setupPayButton() {
         binding.btnPayNow.setOnClickListener(v -> initiatePayment());
     }
 
-    // ── Payment confirm / sent screens ────────────────────────────────────────
+    // ── Pantallas de confirmación y envío / Payment confirm & sent screens ────
 
     private void setupPaymentConfirmScreen() {
-        // Abrir wallet: re-open the wallet app if user closed it before paying
+        // ES: Abrir wallet — volver a abrir la app si el usuario la cerró antes de pagar
+        // EN: Open wallet — re-open the wallet app if user closed it before paying
         binding.btnConfirmTestPayment.setOnClickListener(v -> openWalletIntent());
         binding.btnCancelPayment.setOnClickListener(v -> onCancelPayment());
         binding.btnNewScan.setOnClickListener(v -> resetToScanning());
     }
 
-    // ── Payment initiation ────────────────────────────────────────────────────
+    // ── Inicio del pago / Payment initiation ─────────────────────────────────
 
     private void initiatePayment() {
         if (scannedInvoice == null || scannedBtcAmount <= 0
@@ -271,7 +295,8 @@ public class CustomerHomeActivity extends AppCompatActivity {
                         }
                     }
 
-                    // Fallback: build paymentLink from destination address if API didn't return one
+                    // ES: Alternativa: construir paymentLink desde la dirección destino si la API no devolvió uno
+                    // EN: Fallback: build paymentLink from destination address if API didn't return one
                     if ((link == null || link.isEmpty()) && destAddress != null) {
                         link = "bitcoin:" + destAddress;
                         if (scannedBtcAmount > 0) {
@@ -320,7 +345,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
         }).start();
     }
 
-    // ── Wallet intent ─────────────────────────────────────────────────────────
+    // ── Intent de la wallet / Wallet intent ──────────────────────────────────
 
     private void openWalletIntent() {
         if (paymentLink == null) return;
@@ -331,7 +356,8 @@ public class CustomerHomeActivity extends AppCompatActivity {
             Toast.makeText(this, "Enlace de pago inválido", Toast.LENGTH_SHORT).show();
             return;
         }
-        // Only allow the bitcoin: scheme — reject intent://, javascript:, etc.
+        // ES: Solo permitir el esquema bitcoin: — rechazar intent://, javascript:, etc.
+        // EN: Only allow the bitcoin: scheme — reject intent://, javascript:, etc.
         String scheme = uri.getScheme();
         if (!"bitcoin".equalsIgnoreCase(scheme)) {
             Toast.makeText(this, "Enlace de pago inválido", Toast.LENGTH_SHORT).show();
@@ -361,7 +387,8 @@ public class CustomerHomeActivity extends AppCompatActivity {
             startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(uri))
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         } catch (android.content.ActivityNotFoundException e) {
-            // Fallback: web Play Store URL
+            // ES: Alternativa: URL de Play Store en la web
+            // EN: Fallback: web Play Store URL
             String webUrl = uri.replace("market://details?id=",
                     "https://play.google.com/store/apps/details?id=");
             try {
@@ -372,7 +399,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
         }
     }
 
-    // ── Firestore ─────────────────────────────────────────────────────────────
+    // ── Firestore / Firestore ─────────────────────────────────────────────────
 
     private void savePayerInfoToFirestore(String invoiceId, String customerName, String payerUid) {
         db.collection("payments")
@@ -390,7 +417,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
                 });
     }
 
-    // ── Waiting overlay ───────────────────────────────────────────────────────
+    // ── Superposición de espera / Waiting overlay ────────────────────────────
 
     private void showWaitingForPayment(double btcAmount) {
         binding.tvConfirmBtcAmount.setText(
@@ -414,7 +441,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
         binding.layoutPaymentConfirm.setVisibility(View.GONE);
     }
 
-    // ── Invoice status polling ─────────────────────────────────────────────────
+    // ── Sondeo del estado de la factura / Invoice status polling ─────────────
 
     private void startPolling() {
         pollingStopped = false;
@@ -479,7 +506,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
         binding.btnPayNow.setText(R.string.btn_pay_now);
     }
 
-    // ── Bottom nav ────────────────────────────────────────────────────────────
+    // ── Navegación inferior / Bottom nav ─────────────────────────────────────
 
     private void setupBottomNav() {
         binding.bottomNav.setOnItemSelectedListener(item -> {
@@ -496,7 +523,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
         binding.bottomNav.setSelectedItemId(R.id.nav_pay);
     }
 
-    // ── Camera / scanner ──────────────────────────────────────────────────────
+    // ── Cámara y escáner / Camera & scanner ──────────────────────────────────
 
     private void requestCameraIfNeeded() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
@@ -560,7 +587,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-    // ── QR dispatch ───────────────────────────────────────────────────────────
+    // ── Despacho de QR / QR dispatch ─────────────────────────────────────────
 
     private void handleScannedQr(String raw) {
         String input = raw.trim();
@@ -580,7 +607,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
         }
     }
 
-    // ── Lightning BOLT11 ──────────────────────────────────────────────────────
+    // ── Lightning BOLT11 / Lightning BOLT11 ──────────────────────────────────
 
     private void handleLightningInvoice(String input) {
         String invoice = input;
@@ -610,7 +637,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
         return amount;
     }
 
-    // ── Bitcoin on-chain / BIP21 ──────────────────────────────────────────────
+    // ── Bitcoin en cadena (BIP21) / Bitcoin on-chain (BIP21) ─────────────────
 
     private void handleBitcoinAddress(String input) {
         String address;
@@ -644,7 +671,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
         return null;
     }
 
-    // ── BTCPay checkout URL ───────────────────────────────────────────────────
+    // ── URL de pago BTCPay / BTCPay checkout URL ─────────────────────────────
 
     private void handleBtcPayUrl(String invoiceId) {
         if (!INVOICE_ID_VALID.matcher(invoiceId).matches()) {
@@ -726,7 +753,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
         return result;
     }
 
-    // ── Shared payment details UI ─────────────────────────────────────────────
+    // ── UI de detalles de pago compartida / Shared payment details UI ────────
 
     private void showPaymentDetails(String id, Double btc, PaymentType type) {
         scannedInvoice = id;
@@ -800,7 +827,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
         resumeScannerIfPermitted();
     }
 
-    // ── Back navigation through overlays ─────────────────────────────────────
+    // ── Navegación atrás entre superposiciones / Back navigation through overlays ─
 
     @Override
     public void onBackPressed() {
@@ -813,7 +840,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
         }
     }
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────────
+    // ── Ciclo de vida / Lifecycle ─────────────────────────────────────────────
 
     @Override
     protected void onResume() {
@@ -823,7 +850,8 @@ public class CustomerHomeActivity extends AppCompatActivity {
             resumeScannerIfPermitted();
         }
         PriceService.get().addListener(priceListener);
-        // Resume polling if user comes back from wallet app and payment is still pending
+        // ES: Reanudar sondeo si el usuario vuelve de la wallet y el pago sigue pendiente
+        // EN: Resume polling if user comes back from wallet app and payment is still pending
         if (!pollingStopped && scannedInvoice != null) {
             mainHandler.postDelayed(invoicePollRunnable, POLL_INTERVAL_MS);
         }

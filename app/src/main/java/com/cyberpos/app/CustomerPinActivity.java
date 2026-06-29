@@ -1,3 +1,20 @@
+/*
+ * CyberPOS — Bitcoin POS para pequeños negocios
+ * Copyright (C) 2026 Daniel Quintanilla Paniagua
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package com.cyberpos.app;
 
 import android.os.Bundle;
@@ -48,7 +65,7 @@ public class CustomerPinActivity extends AppCompatActivity {
             .addOnSuccessListener(doc -> {
                 if (doc.exists() && doc.getString("pinHash") != null) {
                     existingPinHash = doc.getString("pinHash");
-                    existingPinSalt = doc.getString("pinSalt"); // null for legacy unsalted hashes
+                    existingPinSalt = doc.getString("pinSalt"); // ES: null para hashes sin salt del sistema legado / EN: null for legacy unsalted hashes
                     binding.tilPinActual.setVisibility(View.VISIBLE);
                 } else {
                     existingPinHash = null;
@@ -100,7 +117,8 @@ public class CustomerPinActivity extends AppCompatActivity {
         if (existingPinSalt != null && !existingPinSalt.isEmpty()) {
             return hashPin(existingPinSalt + pin).equals(existingPinHash);
         }
-        // Legacy path: hashes stored before salt was introduced
+        // ES: Ruta alternativa: hashes almacenados antes de introducir el salt
+        // EN: Legacy path: hashes stored before salt was introduced
         return hashPin(pin).equals(existingPinHash);
     }
 

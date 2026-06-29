@@ -133,6 +133,43 @@
     <string name="msg_saved_success">Changes saved</string>
     <string name="msg_save_error">Save error: %1$s</string>
 
+    <string name="nfc_service_desc">CyberPOS NFC payment</string>
+    <string name="label_nfc_active">NFC ACTIVE — Tap customer\'s phone here</string>
+
+    <string name="settings_printer">Bluetooth Printer</string>
+    <string name="title_bluetooth_printer">PRINTER</string>
+    <string name="subtitle_bluetooth_printer">Thermal printer receipts</string>
+    <string name="label_current_printer">ACTIVE PRINTER</string>
+    <string name="label_no_printer_configured">No printer configured</string>
+    <string name="label_paired_devices">PAIRED DEVICES</string>
+    <string name="label_no_paired_devices">No Bluetooth devices paired.\nGo to Settings → Bluetooth to pair your printer.</string>
+    <string name="msg_pair_hint">Pair your printer first from\nSettings → System Bluetooth</string>
+    <string name="msg_printer_saved">Printer saved: %1$s</string>
+    <string name="btn_print_receipt">Print receipt</string>
+    <string name="msg_printing">Printing…</string>
+    <string name="msg_print_success">✓ Receipt printed</string>
+    <string name="msg_print_error">Print error: %1$s</string>
+    <string name="msg_no_printer">Configure a printer in Settings → Bluetooth Printer</string>
+
+    <string name="title_reportes">REPORTS</string>
+    <string name="subtitle_reportes">Export your transactions</string>
+    <string name="label_period">PERIOD</string>
+    <string name="filter_today">TODAY</string>
+    <string name="filter_week">WEEK</string>
+    <string name="filter_month">MONTH</string>
+    <string name="filter_custom">CUSTOM</string>
+    <string name="btn_from">From</string>
+    <string name="btn_to">To</string>
+    <string name="btn_export_pdf">Export PDF</string>
+    <string name="btn_export_csv">Export CSV</string>
+    <string name="msg_no_report_transactions">No transactions in this period</string>
+    <string name="msg_generating_report">Generating report…</string>
+    <string name="error_export_report">Error generating file</string>
+    <string name="msg_share_report">Share report</string>
+    <string name="msg_saved_to_downloads">✓ Saved to Downloads/CyberPOS</string>
+    <string name="action_share">SHARE</string>
+    <string name="settings_reports">Reports</string>
+
     <string name="label_role_merchant">Merchant</string>
     <string name="section_my_business">MY BUSINESS</string>
     <string name="settings_business_info">Business information</string>

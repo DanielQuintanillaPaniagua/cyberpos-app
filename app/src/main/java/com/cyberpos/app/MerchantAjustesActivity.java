@@ -1,3 +1,20 @@
+/*
+ * CyberPOS — Bitcoin POS para pequeños negocios
+ * Copyright (C) 2026 Daniel Quintanilla Paniagua
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package com.cyberpos.app;
 
 import android.content.Intent;
@@ -56,6 +73,8 @@ public class MerchantAjustesActivity extends AppCompatActivity {
     private void setupSettingsRows() {
         binding.rowBusinessInfo.setOnClickListener(v ->
             startActivity(new Intent(this, InformacionNegocioActivity.class)));
+        binding.rowReportes.setOnClickListener(v ->
+            startActivity(new Intent(this, ReportesActivity.class)));
         binding.rowBankAccounts.setOnClickListener(v ->
             startActivity(new Intent(this, CuentasBancariasActivity.class)));
         binding.rowTaxes.setOnClickListener(v ->
@@ -69,6 +88,8 @@ public class MerchantAjustesActivity extends AppCompatActivity {
             startActivity(new Intent(this, IdiomaActivity.class)));
         binding.rowMerchantCurrency.setOnClickListener(v ->
             startActivity(new Intent(this, MerchantMonedaActivity.class)));
+        binding.rowImpresora.setOnClickListener(v ->
+            startActivity(new Intent(this, BluetoothPrinterActivity.class)));
         binding.rowConfirmations.setOnClickListener(v ->
             startActivity(new Intent(this, ConfirmacionesActivity.class)));
         binding.rowMerchantPin.setOnClickListener(v ->

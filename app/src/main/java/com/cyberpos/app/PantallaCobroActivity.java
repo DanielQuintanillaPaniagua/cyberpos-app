@@ -1,3 +1,20 @@
+/*
+ * CyberPOS — Bitcoin POS para pequeños negocios
+ * Copyright (C) 2026 Daniel Quintanilla Paniagua
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package com.cyberpos.app;
 
 import android.content.Intent;
@@ -48,11 +65,13 @@ public class PantallaCobroActivity extends AppCompatActivity {
         "1 min", "2 min", "5 min", "10 min"
     };
 
-    // Límite conservador: 700 KB en caracteres Base64
+    // ES: Límite conservador: 700 KB en caracteres Base64
+    // EN: Conservative limit: 700 KB in Base64 characters
     private static final int MAX_BASE64_CHARS = 700 * 1024;
 
     private int selectedColor = PALETTE_COLORS[0];
-    // null → el usuario no eligió imagen nueva en esta sesión
+    // ES: null → el usuario no eligió imagen nueva en esta sesión
+    // EN: null → the user did not choose a new image in this session
     private String pendingLogoBase64 = null;
 
     private final Handler qrHandler = new Handler(Looper.getMainLooper());
@@ -64,7 +83,8 @@ public class PantallaCobroActivity extends AppCompatActivity {
             Uri uri = result.getData().getData();
             if (uri == null) return;
 
-            // Procesamiento en background para no bloquear UI
+            // ES: Procesamiento en background para no bloquear la UI
+            // EN: Background processing to avoid blocking the UI
             new Thread(() -> {
                 String base64 = processLogoImage(uri);
                 if (base64 == null) {
@@ -72,7 +92,8 @@ public class PantallaCobroActivity extends AppCompatActivity {
                         Toast.makeText(this, "No se pudo procesar la imagen", Toast.LENGTH_SHORT).show());
                     return;
                 }
-                // Decodificamos el resultado para mostrarlo en el ImageView
+                // ES: Decodificamos el resultado para mostrarlo en el ImageView
+                // EN: Decode the result to display it in the ImageView
                 byte[] bytes = Base64.decode(base64, Base64.NO_WRAP);
                 Bitmap preview = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
                 runOnUiThread(() -> {
@@ -85,30 +106,37 @@ public class PantallaCobroActivity extends AppCompatActivity {
             }).start();
         });
 
-    // ── Procesamiento de imagen ──────────────────────────────────────────────
+    // ── Procesamiento de imagen / Image processing ───────────────────────────
 
     /**
-     * Carga la imagen desde la URI, la redimensiona a ≤256×256 manteniendo
-     * proporción, la comprime a JPEG y devuelve el string Base64 resultante.
-     * Si el resultado supera MAX_BASE64_CHARS reduce la calidad progresivamente.
-     * Devuelve null en caso de error.
+     * ES: Carga la imagen desde la URI, la redimensiona a ≤256×256 manteniendo
+     *     proporción, la comprime a JPEG y devuelve el string Base64 resultante.
+     *     Si el resultado supera MAX_BASE64_CHARS reduce la calidad progresivamente.
+     *     Devuelve null en caso de error.
+     * EN: Loads the image from the URI, resizes it to ≤256×256 maintaining aspect
+     *     ratio, compresses it to JPEG, and returns the resulting Base64 string.
+     *     If the result exceeds MAX_BASE64_CHARS, quality is progressively reduced.
+     *     Returns null on error.
      */
     private String processLogoImage(Uri uri) {
         try {
-            // Paso 1 – leer dimensiones sin cargar píxeles
+            // ES: Paso 1 – leer dimensiones sin cargar píxeles
+            // EN: Step 1 – read dimensions without loading pixels
             BitmapFactory.Options opts = new BitmapFactory.Options();
             opts.inJustDecodeBounds = true;
             try (InputStream is = getContentResolver().openInputStream(uri)) {
                 BitmapFactory.decodeStream(is, null, opts);
             }
 
-            // Paso 2 – inSampleSize para no cargar imágenes enormes completas en RAM
+            // ES: Paso 2 – inSampleSize para no cargar imágenes enormes completas en RAM
+            // EN: Step 2 – inSampleSize to avoid loading huge images fully into RAM
             int sampleSize = 1;
             while (opts.outWidth / sampleSize > 512 || opts.outHeight / sampleSize > 512) {
                 sampleSize *= 2;
             }
 
-            // Paso 3 – cargar con submuestreo
+            // ES: Paso 3 – cargar con submuestreo
+            // EN: Step 3 – load with subsampling
             opts.inJustDecodeBounds = false;
             opts.inSampleSize = sampleSize;
             Bitmap sampled;
@@ -117,7 +145,8 @@ public class PantallaCobroActivity extends AppCompatActivity {
             }
             if (sampled == null) return null;
 
-            // Paso 4 – escalar a máximo 256×256 manteniendo proporción
+            // ES: Paso 4 – escalar a máximo 256×256 manteniendo proporción
+            // EN: Step 4 – scale to maximum 256×256 maintaining aspect ratio
             float scale = Math.min(256f / sampled.getWidth(), 256f / sampled.getHeight());
             Bitmap resized;
             if (scale < 1.0f) {
@@ -131,7 +160,8 @@ public class PantallaCobroActivity extends AppCompatActivity {
                 resized = sampled;
             }
 
-            // Paso 5 – comprimir a JPEG; bajar calidad si supera el límite
+            // ES: Paso 5 – comprimir a JPEG; bajar calidad si supera el límite
+            // EN: Step 5 – compress to JPEG; reduce quality if it exceeds the limit
             String base64 = compressToBase64(resized, 70);
             if (base64.length() > MAX_BASE64_CHARS) base64 = compressToBase64(resized, 50);
             if (base64.length() > MAX_BASE64_CHARS) base64 = compressToBase64(resized, 30);
@@ -150,7 +180,7 @@ public class PantallaCobroActivity extends AppCompatActivity {
         return Base64.encodeToString(baos.toByteArray(), Base64.NO_WRAP);
     }
 
-    // ── Ciclo de vida ────────────────────────────────────────────────────────
+    // ── Ciclo de vida / Lifecycle ────────────────────────────────────────────
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -182,7 +212,7 @@ public class PantallaCobroActivity extends AppCompatActivity {
         qrHandler.removeCallbacks(qrRunnable);
     }
 
-    // ── UI helpers ───────────────────────────────────────────────────────────
+    // ── Ayudantes de UI / UI helpers ─────────────────────────────────────────
 
     private void setupColorPicker() {
         int sizePx  = (int) (40 * getResources().getDisplayMetrics().density);
@@ -249,7 +279,7 @@ public class PantallaCobroActivity extends AppCompatActivity {
         } catch (WriterException ignored) {}
     }
 
-    // ── Firestore ────────────────────────────────────────────────────────────
+    // ── Firestore / Firestore ────────────────────────────────────────────────
 
     private void loadConfig() {
         if (auth.getCurrentUser() == null) return;
@@ -276,7 +306,8 @@ public class PantallaCobroActivity extends AppCompatActivity {
                 String exp = doc.getString("expiracion");
                 if (exp != null) binding.etExpiracion.setText(exp, false);
 
-                // Decodificar logo desde Base64
+                // ES: Decodificar logo desde Base64
+                // EN: Decode logo from Base64
                 String logoBase64 = doc.getString("logoBase64");
                 if (logoBase64 != null && !logoBase64.isEmpty()) {
                     new Thread(() -> {
@@ -309,8 +340,10 @@ public class PantallaCobroActivity extends AppCompatActivity {
         data.put("mostrarUsd",           binding.switchMostrarUsd.isChecked());
         data.put("expiracion",           expiracion);
 
-        // Solo incluimos logoBase64 si el usuario eligió una imagen nueva en esta sesión;
-        // merge() preserva el valor anterior si no lo incluimos.
+        // ES: Solo incluimos logoBase64 si el usuario eligió una imagen nueva en esta sesión;
+        //     merge() preserva el valor anterior si no lo incluimos.
+        // EN: Only include logoBase64 if the user chose a new image in this session;
+        //     merge() preserves the previous value if we don't include it.
         if (pendingLogoBase64 != null) {
             data.put("logoBase64", pendingLogoBase64);
         }

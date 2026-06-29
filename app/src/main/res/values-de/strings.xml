@@ -133,6 +133,23 @@
     <string name="msg_saved_success">Änderungen gespeichert</string>
     <string name="msg_save_error">Fehler beim Speichern: %1$s</string>
 
+    <string name="title_reportes">BERICHTE</string>
+    <string name="subtitle_reportes">Transaktionen exportieren</string>
+    <string name="label_period">ZEITRAUM</string>
+    <string name="filter_today">HEUTE</string>
+    <string name="filter_week">WOCHE</string>
+    <string name="filter_month">MONAT</string>
+    <string name="filter_custom">BENUTZERDEFINIERT</string>
+    <string name="btn_from">Von</string>
+    <string name="btn_to">Bis</string>
+    <string name="btn_export_pdf">PDF exportieren</string>
+    <string name="btn_export_csv">CSV exportieren</string>
+    <string name="msg_no_report_transactions">Keine Transaktionen in diesem Zeitraum</string>
+    <string name="msg_generating_report">Bericht wird erstellt…</string>
+    <string name="error_export_report">Fehler beim Erstellen der Datei</string>
+    <string name="msg_share_report">Bericht teilen</string>
+    <string name="settings_reports">Berichte</string>
+
     <string name="label_role_merchant">Händler</string>
     <string name="section_my_business">MEIN UNTERNEHMEN</string>
     <string name="settings_business_info">Unternehmensinformationen</string>
