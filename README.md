@@ -182,6 +182,7 @@ Abrí el proyecto en Android Studio, sincronizá con Gradle y correlo en un emul
 ---
 
 ## Arquitectura
+
 cyberpos-app/
 ├── app/src/main/java/com/cyberpos/app/
 │   ├── activities/
