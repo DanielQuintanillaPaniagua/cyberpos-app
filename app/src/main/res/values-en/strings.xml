@@ -298,4 +298,32 @@
     <string name="scope_first">First unit only</string>
     <string name="scope_threshold">From N units</string>
     <string name="error_discount_min_units">Minimum 2 units</string>
+
+    <!-- Auto-traducido por sync_strings.py -->
+    <string name="login_failed_generic">Incorrect email or password</string>
+    <string name="register_failed_generic">The account could not be created. Check the data and try again.</string>
+    <string name="title_two_factor">2FA VERIFICATION</string>
+    <string name="subtitle_two_factor_email">Check your email %1$s\nand copy the 6-digit code</string>
+    <string name="subtitle_two_factor_sms">Check your SMS\nmessages and copy the 6-digit code</string>
+    <string name="hint_verification_code">000000</string>
+    <string name="btn_verify_code">Verify</string>
+    <string name="btn_resend_code">Resend code</string>
+    <string name="msg_send_2fa_code">Send verification code</string>
+    <string name="msg_code_sent_sms">Code sent by SMS</string>
+    <string name="error_code_required">Enter the verification code</string>
+    <string name="error_invalid_code">Wrong code. Check and try again.</string>
+    <string name="error_code_expired">The code has expired. Tap Resend to get a new one.</string>
+    <string name="error_code_used">This code has already been used. Tap Resend to get a new one.</string>
+    <string name="error_2fa_failed">Error verifying code. Try again.</string>
+    <string name="error_no_email_client">A mail application was not found on the device.</string>
+    <string name="msg_sms_2fa_code">Your CyberPOS code: %1$s (valid 10 min)</string>
+    <string name="btn_share_receipt">📄 Share receipt</string>
+    <string name="btn_save_receipt">💾 Save to Downloads</string>
+    <string name="msg_share_receipt">Share payment receipt</string>
+    <string name="msg_generating_receipt">Generating receipt…</string>
+    <string name="msg_receipt_saved">Receipt saved in Downloads</string>
+    <string name="error_receipt_generation">Error generating receipt</string>
+    <string name="menu_share_receipt">📄 Share</string>
+    <string name="menu_save_receipt">💾 Save to Downloads</string>
+    <string name="title_image_source">Product photo</string>
 </resources>
