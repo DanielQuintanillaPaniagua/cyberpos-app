@@ -116,10 +116,19 @@ public class RegisterActivity extends AppCompatActivity {
                     goToDestination();
                 })
                 .addOnFailureListener(e -> {
-                    // ES: Auth exitosa — redirigir al usuario de todas formas
-                    // EN: Auth succeeded — still route the user in
+                    // ES: Sin perfil no hay rol — reintentar en vez de continuar a medias.
+                    //     Antes se navegaba igual y el usuario quedaba sin documento en users/.
+                    // EN: No profile means no role — retry instead of continuing half-done.
+                    //     This used to navigate anyway, leaving the user without a users/ doc.
                     setLoading(false);
-                    goToDestination();
+                    com.google.android.material.snackbar.Snackbar
+                            .make(binding.getRoot(), R.string.error_profile_save,
+                                    com.google.android.material.snackbar.Snackbar.LENGTH_INDEFINITE)
+                            .setAction(R.string.btn_retry, v -> {
+                                setLoading(true);
+                                saveUserProfile(uid, displayName, email);
+                            })
+                            .show();
                 });
     }
 

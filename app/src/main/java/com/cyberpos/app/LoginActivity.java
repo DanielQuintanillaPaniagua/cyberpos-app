@@ -79,7 +79,9 @@ public class LoginActivity extends AppCompatActivity {
                     String role = doc.exists() ? doc.getString("role") : null;
                     navigateToMain(role);
                 })
-                .addOnFailureListener(e -> navigateToMain(null));
+                // ES: Fail-closed: sin rol verificado no se entra — ofrecer reintento
+                // EN: Fail-closed: no verified role, no entry — offer a retry
+                .addOnFailureListener(e -> showRetry(this::routeByRole));
     }
 
     // Called after a fresh login — checks 2FA before navigating
@@ -92,7 +94,7 @@ public class LoginActivity extends AppCompatActivity {
                 })
                 .addOnFailureListener(e -> {
                     setLoading(false);
-                    navigateToMain(null);
+                    showRetry(this::routeAfterLogin);
                 });
     }
 
@@ -117,17 +119,31 @@ public class LoginActivity extends AppCompatActivity {
                     }
                 })
                 .addOnFailureListener(e -> {
+                    // ES: Fail-closed: si no se pudo comprobar si el 2FA está activo,
+                    //     no navegar — antes esto dejaba entrar saltándose el 2FA.
+                    // EN: Fail-closed: if the 2FA check couldn't run, don't navigate —
+                    //     this used to let the user in, skipping 2FA.
                     setLoading(false);
-                    navigateToMain(role);
+                    showRetry(() -> check2FA(uid, role));
                 });
     }
 
     private void navigateToMain(String role) {
-        Class<?> dest = "customer".equals(role) ? CustomerHomeActivity.class : MainActivity.class;
+        // ES: Rol desconocido/ausente → menor privilegio (cliente), nunca comerciante
+        // EN: Unknown/missing role → least privilege (customer), never merchant
+        Class<?> dest = "merchant".equals(role) ? MainActivity.class : CustomerHomeActivity.class;
         Intent intent = new Intent(this, dest);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
+    }
+
+    private void showRetry(Runnable action) {
+        com.google.android.material.snackbar.Snackbar
+                .make(binding.getRoot(), R.string.error_role_fetch,
+                        com.google.android.material.snackbar.Snackbar.LENGTH_INDEFINITE)
+                .setAction(R.string.btn_retry, v -> action.run())
+                .show();
     }
 
     private void sendPasswordReset() {

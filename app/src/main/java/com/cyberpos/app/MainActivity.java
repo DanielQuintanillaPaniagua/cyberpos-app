@@ -50,9 +50,11 @@ public class MainActivity extends AppCompatActivity {
         db.collection("users").document(uid).get()
                 .addOnSuccessListener(doc -> {
                     String role = doc.exists() ? doc.getString("role") : null;
-                    Class<?> dest = "customer".equals(role)
-                            ? CustomerHomeActivity.class
-                            : CatalogoActivity.class;
+                    // ES: Rol desconocido/ausente → menor privilegio (cliente), nunca comerciante
+                    // EN: Unknown/missing role → least privilege (customer), never merchant
+                    Class<?> dest = "merchant".equals(role)
+                            ? CatalogoActivity.class
+                            : CustomerHomeActivity.class;
                     Intent intent = new Intent(this, dest);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(intent);

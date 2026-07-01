@@ -279,6 +279,11 @@
     <string name="cd_qr_code">Código QR de pago Lightning</string>
     <string name="qr_instructions">Muestra este QR al cliente\npara recibir el pago en Bitcoin</string>
     <string name="error_amount_required">Ingresa el monto</string>
+
+    <!-- Fail-closed routing -->
+    <string name="error_role_fetch">No se pudo verificar tu cuenta. Revisa tu conexión.</string>
+    <string name="error_profile_save">No se pudo guardar tu perfil. Sin él no podemos asignarte un rol.</string>
+    <string name="btn_retry">Reintentar</string>
     <string name="error_amount_invalid">Ingresa un monto válido mayor a 0</string>
     <string name="error_qr_generation">Error al generar el QR</string>
     <string name="error_save_payment">Error al guardar el pago</string>

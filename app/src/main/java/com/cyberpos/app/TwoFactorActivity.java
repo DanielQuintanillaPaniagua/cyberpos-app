@@ -234,7 +234,9 @@ public class TwoFactorActivity extends AppCompatActivity {
     }
 
     private void navigateToMain() {
-        Class<?> dest = "customer".equals(role) ? CustomerHomeActivity.class : MainActivity.class;
+        // ES: Rol desconocido/ausente → menor privilegio (cliente), nunca comerciante
+        // EN: Unknown/missing role → least privilege (customer), never merchant
+        Class<?> dest = "merchant".equals(role) ? MainActivity.class : CustomerHomeActivity.class;
         Intent intent = new Intent(this, dest);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
