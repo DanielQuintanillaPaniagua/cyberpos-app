@@ -17,30 +17,43 @@
  */
 package com.cyberpos.app;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.cyberpos.app.databinding.ActivityHistorialBinding;
+import com.cyberpos.app.model.CartItem;
 import com.cyberpos.app.model.Payment;
+import com.google.android.material.button.MaterialButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class HistorialActivity extends AppCompatActivity {
 
@@ -49,6 +62,16 @@ public class HistorialActivity extends AppCompatActivity {
     private FirebaseAuth auth;
     private CustomerTxAdapter adapter;
     private final List<ListItem> items = new ArrayList<>();
+
+    private CustomerTx pendingSaveTx = null;
+    private static final int RC_WRITE_STORAGE = 43;
+
+    // ES: Últimos pagos cargados, para re-formatear cuando cambie la tasa (p. ej. al llegar EUR)
+    // EN: Last loaded payments, to re-format when the rate changes (e.g. once EUR arrives)
+    private List<Payment> lastPayments = null;
+    private final PriceService.Listener priceListener = price -> {
+        if (lastPayments != null) updateUI(lastPayments);
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,7 +82,7 @@ public class HistorialActivity extends AppCompatActivity {
         db   = FirebaseFirestore.getInstance();
         auth = FirebaseAuth.getInstance();
 
-        adapter = new CustomerTxAdapter(items);
+        adapter = new CustomerTxAdapter(items, this::onReceiptButtonClick);
         binding.recyclerView.setLayoutManager(new LinearLayoutManager(this));
         binding.recyclerView.setAdapter(adapter);
 
@@ -70,7 +93,14 @@ public class HistorialActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         binding.bottomNav.setSelectedItemId(R.id.nav_history);
+        PriceService.get().addListener(priceListener);
         loadPayments();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        PriceService.get().removeListener(priceListener);
     }
 
     // ── Firestore / Firestore ─────────────────────────────────────────────────
@@ -97,6 +127,7 @@ public class HistorialActivity extends AppCompatActivity {
     }
 
     private void updateUI(List<Payment> payments) {
+        lastPayments = payments;
         double totalBtc = 0, totalUsd = 0;
         int txThisMonth = 0;
         Calendar now = Calendar.getInstance();
@@ -118,7 +149,7 @@ public class HistorialActivity extends AppCompatActivity {
         }
 
         binding.tvTotalBtc.setText(String.format(Locale.US, "-%.8f BTC", totalBtc));
-        binding.tvTotalUsd.setText(String.format(Locale.US, "≈ $%.2f USD", totalUsd));
+        binding.tvTotalUsd.setText(MoneyFormatter.historyEquivalent(this, totalBtc, totalUsd));
         binding.tvTxCount.setText(String.valueOf(txThisMonth));
 
         items.clear();
@@ -188,8 +219,141 @@ public class HistorialActivity extends AppCompatActivity {
                     timeFmt.format(ts),
                     payment.getAmountBtc(),
                     payment.getAmountUsd(),
-                    payment.getStatus())));
+                    payment.getStatus(),
+                    payment.getBtcPayInvoiceId(),
+                    payment.getMerchantName(),
+                    payment.getCartItems(),
+                    payment.getIvaPercent(),
+                    payment.getIsrPercent(),
+                    payment.getDiscountType(),
+                    payment.getDiscountValue())));
         }
+    }
+
+    // ── Recibo / Receipt actions ──────────────────────────────────────────────
+
+    private void onReceiptButtonClick(CustomerTx tx, View anchor) {
+        PopupMenu popup = new PopupMenu(this, anchor);
+        popup.getMenu().add(0, 1, 0, getString(R.string.menu_share_receipt));
+        popup.getMenu().add(0, 2, 1, getString(R.string.menu_save_receipt));
+        popup.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == 1) {
+                shareReceipt(tx);
+            } else {
+                saveReceipt(tx);
+            }
+            return true;
+        });
+        popup.show();
+    }
+
+    private void shareReceipt(CustomerTx tx) {
+        Toast.makeText(this, R.string.msg_generating_receipt, Toast.LENGTH_SHORT).show();
+        List<CartItem> cartItems = convertCartItems(tx.cartItemMaps);
+
+        new Thread(() -> {
+            try {
+                File pdf = ReceiptGenerator.generate(
+                        this, tx.merchantName, tx.invoiceId,
+                        tx.usdAmount, tx.btcAmount, cartItems,
+                        tx.ivaPercent, tx.isrPercent,
+                        tx.discountType, tx.discountValue, null);
+                runOnUiThread(() -> {
+                    Uri uri = FileProvider.getUriForFile(
+                            this, "com.cyberpos.app.fileprovider", pdf);
+                    Intent share = new Intent(Intent.ACTION_SEND);
+                    share.setType("application/pdf");
+                    share.putExtra(Intent.EXTRA_STREAM, uri);
+                    share.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivity(Intent.createChooser(share, getString(R.string.msg_share_receipt)));
+                });
+            } catch (Exception e) {
+                runOnUiThread(() ->
+                        Toast.makeText(this, R.string.error_receipt_generation, Toast.LENGTH_LONG).show());
+            }
+        }).start();
+    }
+
+    private void saveReceipt(CustomerTx tx) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
+                ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                        != PackageManager.PERMISSION_GRANTED) {
+            pendingSaveTx = tx;
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, RC_WRITE_STORAGE);
+            return;
+        }
+        doSave(tx);
+    }
+
+    private void doSave(CustomerTx tx) {
+        Toast.makeText(this, R.string.msg_generating_receipt, Toast.LENGTH_SHORT).show();
+        List<CartItem> cartItems = convertCartItems(tx.cartItemMaps);
+
+        new Thread(() -> {
+            try {
+                File pdf = ReceiptGenerator.generate(
+                        this, tx.merchantName, tx.invoiceId,
+                        tx.usdAmount, tx.btcAmount, cartItems,
+                        tx.ivaPercent, tx.isrPercent,
+                        tx.discountType, tx.discountValue, null);
+                ReceiptGenerator.saveToDownloads(this, pdf);
+                runOnUiThread(() ->
+                        Toast.makeText(this, R.string.msg_receipt_saved, Toast.LENGTH_LONG).show());
+            } catch (Exception e) {
+                runOnUiThread(() ->
+                        Toast.makeText(this, R.string.error_receipt_generation, Toast.LENGTH_LONG).show());
+            }
+        }).start();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == RC_WRITE_STORAGE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED
+                    && pendingSaveTx != null) {
+                doSave(pendingSaveTx);
+            } else {
+                Toast.makeText(this, R.string.error_receipt_generation, Toast.LENGTH_SHORT).show();
+            }
+            pendingSaveTx = null;
+        }
+    }
+
+    private static List<CartItem> convertCartItems(List<Map<String, Object>> maps) {
+        if (maps == null || maps.isEmpty()) return Collections.emptyList();
+        List<CartItem> result = new ArrayList<>();
+        for (Map<String, Object> m : maps) {
+            String nombre     = (String) m.get("nombre");
+            String productoId = (String) m.get("productoId");
+            String categoria  = (String) m.get("categoria");
+            double precio = 0;
+            // ES: toMap() guarda la clave "precio" (se aceptaba "precioUsd" por compatibilidad)
+            // EN: toMap() stores the "precio" key ("precioUsd" kept for backward compatibility)
+            Object pObj = m.get("precio");
+            if (pObj == null) pObj = m.get("precioUsd");
+            if (pObj instanceof Number) precio = ((Number) pObj).doubleValue();
+            int cantidad = 1;
+            Object cObj = m.get("cantidad");
+            if (cObj instanceof Number) cantidad = ((Number) cObj).intValue();
+            CartItem ci = new CartItem(productoId, nombre, precio, categoria);
+            ci.setCantidad(cantidad);
+            // ES: Restaurar descuento por producto (F8) si estaba guardado
+            // EN: Restore per-product discount (F8) if it was stored
+            String dTipo = (String) m.get("descuentoTipo");
+            if (dTipo != null) ci.setDescuentoTipo(dTipo);
+            Object dValObj = m.get("descuentoValor");
+            if (dValObj instanceof Number) ci.setDescuentoValor(((Number) dValObj).doubleValue());
+            String dAlc = (String) m.get("descuentoAlcance");
+            if (dAlc != null) ci.setDescuentoAlcance(dAlc);
+            Object dMinObj = m.get("descuentoMinCant");
+            if (dMinObj instanceof Number) ci.setDescuentoMinCant(((Number) dMinObj).intValue());
+            result.add(ci);
+        }
+        return result;
     }
 
     // ── Navegación inferior / Bottom nav ─────────────────────────────────────
@@ -217,14 +381,32 @@ public class HistorialActivity extends AppCompatActivity {
         final double btcAmount;
         final double usdAmount;
         final String status;
+        final String invoiceId;
+        final String merchantName;
+        final List<Map<String, Object>> cartItemMaps;
+        final double ivaPercent;
+        final double isrPercent;
+        final String discountType;
+        final double discountValue;
 
         CustomerTx(String displayName, String time,
-                   double btcAmount, double usdAmount, String status) {
-            this.displayName = displayName;
-            this.time = time;
-            this.btcAmount = btcAmount;
-            this.usdAmount = usdAmount;
-            this.status = status;
+                   double btcAmount, double usdAmount, String status,
+                   String invoiceId, String merchantName,
+                   List<Map<String, Object>> cartItemMaps,
+                   double ivaPercent, double isrPercent,
+                   String discountType, double discountValue) {
+            this.displayName  = displayName;
+            this.time         = time;
+            this.btcAmount    = btcAmount;
+            this.usdAmount    = usdAmount;
+            this.status       = status;
+            this.invoiceId    = invoiceId;
+            this.merchantName = merchantName;
+            this.cartItemMaps = cartItemMaps;
+            this.ivaPercent   = ivaPercent;
+            this.isrPercent   = isrPercent;
+            this.discountType  = discountType != null ? discountType : "";
+            this.discountValue = discountValue;
         }
     }
 
@@ -248,11 +430,19 @@ public class HistorialActivity extends AppCompatActivity {
 
     // ── Adaptador / Adapter ──────────────────────────────────────────────────
 
+    interface OnReceiptClickListener {
+        void onClick(CustomerTx tx, View anchor);
+    }
+
     static class CustomerTxAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
         private final List<ListItem> items;
+        private final OnReceiptClickListener receiptListener;
 
-        CustomerTxAdapter(List<ListItem> items) { this.items = items; }
+        CustomerTxAdapter(List<ListItem> items, OnReceiptClickListener receiptListener) {
+            this.items = items;
+            this.receiptListener = receiptListener;
+        }
 
         @Override
         public int getItemViewType(int position) { return items.get(position).type; }
@@ -281,8 +471,8 @@ public class HistorialActivity extends AppCompatActivity {
                 vh.tvDate.setText(tx.time);
                 vh.tvBtcAmount.setText(
                         String.format(Locale.US, "-%.8f BTC", tx.btcAmount));
-                vh.tvUsdAmount.setText(
-                        String.format(Locale.US, "≈ $%.2f USD", tx.usdAmount));
+                vh.tvUsdAmount.setText(MoneyFormatter.historyEquivalent(
+                        holder.itemView.getContext(), tx.btcAmount, tx.usdAmount));
                 if ("settled".equals(tx.status)) {
                     vh.tvStatus.setText("✓ COMPLETADO");
                     vh.tvStatus.setTextColor(
@@ -292,6 +482,7 @@ public class HistorialActivity extends AppCompatActivity {
                     vh.tvStatus.setTextColor(
                             holder.itemView.getContext().getColor(R.color.error));
                 }
+                vh.btnShareReceipt.setOnClickListener(v -> receiptListener.onClick(tx, v));
             }
         }
 
@@ -308,14 +499,16 @@ public class HistorialActivity extends AppCompatActivity {
 
         static class TxViewHolder extends RecyclerView.ViewHolder {
             final TextView tvStoreName, tvDate, tvBtcAmount, tvUsdAmount, tvStatus;
+            final MaterialButton btnShareReceipt;
 
             TxViewHolder(@NonNull View itemView) {
                 super(itemView);
-                tvStoreName = itemView.findViewById(R.id.tvStoreName);
-                tvDate      = itemView.findViewById(R.id.tvDate);
-                tvBtcAmount = itemView.findViewById(R.id.tvBtcAmount);
-                tvUsdAmount = itemView.findViewById(R.id.tvUsdAmount);
-                tvStatus    = itemView.findViewById(R.id.tvStatus);
+                tvStoreName    = itemView.findViewById(R.id.tvStoreName);
+                tvDate         = itemView.findViewById(R.id.tvDate);
+                tvBtcAmount    = itemView.findViewById(R.id.tvBtcAmount);
+                tvUsdAmount    = itemView.findViewById(R.id.tvUsdAmount);
+                tvStatus       = itemView.findViewById(R.id.tvStatus);
+                btnShareReceipt = itemView.findViewById(R.id.btnShareReceipt);
             }
         }
     }

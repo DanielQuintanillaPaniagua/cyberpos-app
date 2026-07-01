@@ -333,6 +333,32 @@
                 app:strokeWidth="1dp" />
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnShareReceipt"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="10dp"
+                android:fontFamily="monospace"
+                android:text="@string/btn_share_receipt"
+                android:textSize="14sp"
+                app:cornerRadius="4dp"
+                app:strokeColor="@color/neon_green"
+                app:strokeWidth="1dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSaveReceipt"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="10dp"
+                android:fontFamily="monospace"
+                android:text="@string/btn_save_receipt"
+                android:textSize="14sp"
+                app:cornerRadius="4dp"
+                app:strokeColor="@color/neon_green"
+                app:strokeWidth="1dp" />
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnNewPayment"
                 style="@style/Widget.CyberPOS.Button.Primary"
                 android:layout_width="match_parent"

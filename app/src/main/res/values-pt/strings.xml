@@ -12,6 +12,7 @@
     <string name="btn_login">Entrar</string>
     <string name="login_failed">Erro de login: %1$s</string>
     <string name="error_email_required">Digite seu e-mail</string>
+    <string name="error_email_invalid">E-mail inválido</string>
     <string name="error_password_length">A senha deve ter pelo menos 6 caracteres</string>
     <string name="link_create_account">Não tem conta? Criar conta</string>
 
@@ -197,4 +198,84 @@
     <string name="error_no_btc_address">Nenhum endereço BTC on-chain na fatura</string>
     <string name="error_payment_methods_fetch">Erro ao obter métodos de pagamento (HTTP %1$d)</string>
     <string name="msg_address_copied">Endereço copiado. Execute:\nbitcoin-cli generatetoaddress 1 %1$s</string>
+
+    <!-- Catálogo de produtos -->
+    <string name="title_catalogo">COBRANÇAS</string>
+    <string name="subtitle_catalogo">Selecione produtos</string>
+    <string name="label_cart">CARRINHO</string>
+    <string name="label_cart_empty">Toque em um produto para adicioná-lo</string>
+    <string name="label_total">TOTAL</string>
+    <string name="btn_cobrar">⚡ Cobrar</string>
+    <string name="btn_cantidad_manual">Valor manual</string>
+    <string name="label_no_products_catalog">Sem produtos configurados.\nVá em Configurações → Catálogo de produtos.</string>
+    <string name="error_load_products">Erro ao carregar produtos</string>
+    <string name="title_gestion_productos">PRODUTOS</string>
+    <string name="subtitle_gestion_productos">Gerencie seu catálogo</string>
+    <string name="label_no_products">Sem produtos. Toque + para adicionar.</string>
+    <string name="btn_add_product">Adicionar produto</string>
+    <string name="title_add_product">Adicionar produto</string>
+    <string name="title_edit_product">Editar produto</string>
+    <string name="hint_product_name">Nome do produto</string>
+    <string name="hint_product_price">Preço (USD)</string>
+    <string name="hint_product_category">Categoria</string>
+    <string name="label_image_optional">Imagem (opcional)</string>
+    <string name="btn_pick_image">Adicionar imagem</string>
+    <string name="btn_save_product">Salvar</string>
+    <string name="btn_cancel">Cancelar</string>
+    <string name="btn_delete">Excluir</string>
+    <string name="msg_product_saved">Produto salvo</string>
+    <string name="msg_product_deleted">Produto excluído</string>
+    <string name="msg_confirm_delete_product">Remover este produto do catálogo?</string>
+    <string name="error_product_name_required">Digite o nome do produto</string>
+    <string name="error_product_price_invalid">Digite um preço válido maior que 0</string>
+    <string name="error_save_product">Erro ao salvar produto</string>
+    <string name="settings_productos">Catálogo de produtos</string>
+
+    <!-- Painel de análises -->
+    <string name="title_dashboard">ANÁLISES</string>
+    <string name="subtitle_dashboard">Resumo de vendas</string>
+    <string name="filter_this_week">ESTA SEMANA</string>
+    <string name="filter_this_month">ESTE MÊS</string>
+    <string name="label_total_sales_usd">TOTAL VENDAS (USD)</string>
+    <string name="label_total_sales_btc">TOTAL VENDAS (BTC)</string>
+    <string name="label_num_transactions">TRANSAÇÕES</string>
+    <string name="label_top_product">PRODUTO DESTAQUE</string>
+    <string name="label_peak_hour">HORA DE PICO</string>
+    <string name="label_chart_income">RECEITA (USD)</string>
+    <string name="label_no_data">Sem dados para este período</string>
+    <string name="settings_dashboard">Análises</string>
+    <string name="nav_dashboard">Análises</string>
+
+    <string-array name="week_days_short">
+        <item>Dom</item>
+        <item>Seg</item>
+        <item>Ter</item>
+        <item>Qua</item>
+        <item>Qui</item>
+        <item>Sex</item>
+        <item>Sáb</item>
+    </string-array>
+    <string name="title_image_source">Foto do produto</string>
+    <string name="option_camera">Câmera</string>
+    <string name="option_gallery">Galeria</string>
+    <string name="error_camera_permission">Permissão de câmera negada</string>
+    <!-- F8 Descontos -->
+    <string name="hint_discount_type">Desconto</string>
+    <string name="hint_discount_value">Valor</string>
+    <string name="discount_none">Sem desconto</string>
+    <string name="discount_percent">Percentagem (%)</string>
+    <string name="discount_fixed">Valor fixo ($)</string>
+    <string name="error_discount_value">Valor de desconto inválido</string>
+    <string name="error_discount_percent">A percentagem não pode exceder 100</string>
+    <string name="error_discount_fixed">O desconto não pode exceder o preço</string>
+    <string name="btn_apply_discount">🏷️ Desconto</string>
+    <string name="btn_remove_discount">Remover desconto</string>
+    <string name="label_subtotal">Subtotal</string>
+    <string name="label_discount">Desconto</string>
+    <string name="hint_discount_scope">Alcance do desconto</string>
+    <string name="hint_discount_min_units">Mín. unidades</string>
+    <string name="scope_all">Todas as unidades</string>
+    <string name="scope_first">Apenas a primeira unidade</string>
+    <string name="scope_threshold">A partir de N unidades</string>
+    <string name="error_discount_min_units">Mínimo 2 unidades</string>
 </resources>

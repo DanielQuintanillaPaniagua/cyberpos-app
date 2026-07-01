@@ -73,6 +73,10 @@ public class MerchantAjustesActivity extends AppCompatActivity {
     private void setupSettingsRows() {
         binding.rowBusinessInfo.setOnClickListener(v ->
             startActivity(new Intent(this, InformacionNegocioActivity.class)));
+        binding.rowDashboard.setOnClickListener(v ->
+            startActivity(new Intent(this, DashboardActivity.class)));
+        binding.rowProductos.setOnClickListener(v ->
+            startActivity(new Intent(this, GestionProductosActivity.class)));
         binding.rowReportes.setOnClickListener(v ->
             startActivity(new Intent(this, ReportesActivity.class)));
         binding.rowBankAccounts.setOnClickListener(v ->
@@ -110,10 +114,13 @@ public class MerchantAjustesActivity extends AppCompatActivity {
         binding.bottomNav.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
             if (id == R.id.nav_cobros) {
-                startActivity(new Intent(this, PaymentActivity.class)
+                startActivity(new Intent(this, CatalogoActivity.class)
                         .setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));
             } else if (id == R.id.nav_merchant_history) {
                 startActivity(new Intent(this, MerchantHistorialActivity.class)
+                        .setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));
+            } else if (id == R.id.nav_dashboard) {
+                startActivity(new Intent(this, DashboardActivity.class)
                         .setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));
             }
             return true;

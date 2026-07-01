@@ -36,7 +36,7 @@ public class PriceService {
     }
 
     private static final String ENDPOINT =
-            "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd";
+            "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd,eur";
     private static final long POLL_MS = 60_000L;
 
     private static volatile PriceService instance;
@@ -45,7 +45,8 @@ public class PriceService {
     private final List<Listener> listeners = new ArrayList<>();
     private final Runnable pollTask = this::fetch;
 
-    private double cachedPrice = 0;
+    private double cachedPrice = 0;   // ES: BTC→USD / EN: BTC→USD
+    private double cachedEur = 0;     // ES: BTC→EUR / EN: BTC→EUR
     private boolean started = false;
 
     private PriceService() {}
@@ -76,9 +77,20 @@ public class PriceService {
         return cachedPrice;
     }
 
+    /** ES: Tasa BTC→USD en caché (0 si aún no cargada). / EN: Cached BTC→USD rate (0 if not loaded yet). */
+    public double getUsdRate() {
+        return cachedPrice;
+    }
+
+    /** ES: Tasa BTC→EUR en caché (0 si aún no cargada). / EN: Cached BTC→EUR rate (0 if not loaded yet). */
+    public double getEurRate() {
+        return cachedEur;
+    }
+
     private void fetch() {
         new Thread(() -> {
             double price = 0;
+            double eur = 0;
             try {
                 HttpURLConnection conn =
                         (HttpURLConnection) new URL(ENDPOINT).openConnection();
@@ -91,17 +103,19 @@ public class PriceService {
                     Scanner sc = new Scanner(is).useDelimiter("\\A");
                     String body = sc.hasNext() ? sc.next() : "";
                     sc.close();
-                    price = new JSONObject(body)
-                            .getJSONObject("bitcoin")
-                            .getDouble("usd");
+                    JSONObject bitcoin = new JSONObject(body).getJSONObject("bitcoin");
+                    price = bitcoin.getDouble("usd");
+                    eur   = bitcoin.optDouble("eur", 0);
                 }
                 conn.disconnect();
             } catch (Exception ignored) {}
 
             final double finalPrice = price;
+            final double finalEur = eur;
             handler.post(() -> {
                 if (finalPrice > 0) {
                     cachedPrice = finalPrice;
+                    if (finalEur > 0) cachedEur = finalEur;
                     for (Listener l : new ArrayList<>(listeners)) {
                         l.onPriceUpdated(cachedPrice);
                     }

@@ -21,6 +21,11 @@
         android:usesPermissionFlags="neverForLocation" />
     <!-- NFC tap-to-pay (HCE) -->
     <uses-permission android:name="android.permission.NFC" />
+    <!-- 2FA SMS delivery -->
+    <uses-permission android:name="android.permission.SEND_SMS" />
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
     <uses-feature android:name="android.hardware.nfc.hce" android:required="false" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
@@ -202,6 +207,28 @@
             android:name=".BluetoothPrinterActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".CatalogoActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".GestionProductosActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".DashboardActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".TwoFactorActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize" />
 
         <!-- NFC HCE service — emulates NFC Type 4 Tag while invoice QR is shown -->
         <service

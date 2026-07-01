@@ -52,7 +52,7 @@ public class MainActivity extends AppCompatActivity {
                     String role = doc.exists() ? doc.getString("role") : null;
                     Class<?> dest = "customer".equals(role)
                             ? CustomerHomeActivity.class
-                            : PaymentActivity.class;
+                            : CatalogoActivity.class;
                     Intent intent = new Intent(this, dest);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(intent);

@@ -58,24 +58,8 @@ public class AyudaContactoActivity extends AppCompatActivity {
     }
 
     private void setupContacto() {
-        binding.rowEmail.setOnClickListener(v -> {
-            Intent intent = new Intent(Intent.ACTION_SENDTO);
-            intent.setData(Uri.parse("mailto:soporte@cyberpos.app"));
-            intent.putExtra(Intent.EXTRA_SUBJECT, "Soporte CyberPOS");
-            startActivity(Intent.createChooser(intent, "Enviar email"));
-        });
-
-        binding.rowWhatsapp.setOnClickListener(v -> {
-            Intent intent = new Intent(Intent.ACTION_VIEW,
-                Uri.parse("https://wa.me/50370000000"));
-            startActivity(intent);
-        });
-
-        binding.rowTelegram.setOnClickListener(v -> {
-            Intent intent = new Intent(Intent.ACTION_VIEW,
-                Uri.parse("https://t.me/cyberpos_sv"));
-            startActivity(intent);
-        });
+        binding.tvSectionContacto.setVisibility(View.GONE);
+        binding.cardContacto.setVisibility(View.GONE);
     }
 
     private void setupAcercaDe() {

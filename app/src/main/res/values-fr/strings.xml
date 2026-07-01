@@ -12,6 +12,7 @@
     <string name="btn_login">Connexion</string>
     <string name="login_failed">Erreur de connexion : %1$s</string>
     <string name="error_email_required">Entrez votre e-mail</string>
+    <string name="error_email_invalid">Adresse e-mail invalide</string>
     <string name="error_password_length">Le mot de passe doit avoir au moins 6 caractères</string>
     <string name="link_create_account">Pas de compte ? Créer un compte</string>
 
@@ -197,4 +198,84 @@
     <string name="error_no_btc_address">Aucune adresse BTC on-chain dans la facture</string>
     <string name="error_payment_methods_fetch">Erreur de récupération (HTTP %1$d)</string>
     <string name="msg_address_copied">Adresse copiée. Exécutez :\nbitcoin-cli generatetoaddress 1 %1$s</string>
+
+    <!-- Catalogue produits -->
+    <string name="title_catalogo">PAIEMENTS</string>
+    <string name="subtitle_catalogo">Sélectionnez des produits</string>
+    <string name="label_cart">PANIER</string>
+    <string name="label_cart_empty">Touchez un produit pour l\'ajouter</string>
+    <string name="label_total">TOTAL</string>
+    <string name="btn_cobrar">⚡ Encaisser</string>
+    <string name="btn_cantidad_manual">Montant manuel</string>
+    <string name="label_no_products_catalog">Aucun produit configuré.\nAllez dans Paramètres → Catalogue produits.</string>
+    <string name="error_load_products">Erreur lors du chargement des produits</string>
+    <string name="title_gestion_productos">PRODUITS</string>
+    <string name="subtitle_gestion_productos">Gérez votre catalogue</string>
+    <string name="label_no_products">Aucun produit. Touchez + pour ajouter.</string>
+    <string name="btn_add_product">Ajouter un produit</string>
+    <string name="title_add_product">Ajouter un produit</string>
+    <string name="title_edit_product">Modifier le produit</string>
+    <string name="hint_product_name">Nom du produit</string>
+    <string name="hint_product_price">Prix (USD)</string>
+    <string name="hint_product_category">Catégorie</string>
+    <string name="label_image_optional">Image (facultatif)</string>
+    <string name="btn_pick_image">Ajouter une image</string>
+    <string name="btn_save_product">Enregistrer</string>
+    <string name="btn_cancel">Annuler</string>
+    <string name="btn_delete">Supprimer</string>
+    <string name="msg_product_saved">Produit enregistré</string>
+    <string name="msg_product_deleted">Produit supprimé</string>
+    <string name="msg_confirm_delete_product">Retirer ce produit du catalogue ?</string>
+    <string name="error_product_name_required">Saisissez le nom du produit</string>
+    <string name="error_product_price_invalid">Saisissez un prix valide supérieur à 0</string>
+    <string name="error_save_product">Erreur lors de l\'enregistrement</string>
+    <string name="settings_productos">Catalogue produits</string>
+
+    <!-- Tableau de bord analytique -->
+    <string name="title_dashboard">ANALYTIQUE</string>
+    <string name="subtitle_dashboard">Résumé des ventes</string>
+    <string name="filter_this_week">CETTE SEMAINE</string>
+    <string name="filter_this_month">CE MOIS</string>
+    <string name="label_total_sales_usd">TOTAL VENTES (USD)</string>
+    <string name="label_total_sales_btc">TOTAL VENTES (BTC)</string>
+    <string name="label_num_transactions">TRANSACTIONS</string>
+    <string name="label_top_product">PRODUIT VEDETTE</string>
+    <string name="label_peak_hour">HEURE DE POINTE</string>
+    <string name="label_chart_income">REVENUS (USD)</string>
+    <string name="label_no_data">Aucune donnée pour cette période</string>
+    <string name="settings_dashboard">Analytique</string>
+    <string name="nav_dashboard">Analytique</string>
+
+    <string-array name="week_days_short">
+        <item>Dim</item>
+        <item>Lun</item>
+        <item>Mar</item>
+        <item>Mer</item>
+        <item>Jeu</item>
+        <item>Ven</item>
+        <item>Sam</item>
+    </string-array>
+    <string name="title_image_source">Photo du produit</string>
+    <string name="option_camera">Appareil photo</string>
+    <string name="option_gallery">Galerie</string>
+    <string name="error_camera_permission">Autorisation caméra refusée</string>
+    <!-- F8 Remises -->
+    <string name="hint_discount_type">Remise</string>
+    <string name="hint_discount_value">Valeur</string>
+    <string name="discount_none">Aucune remise</string>
+    <string name="discount_percent">Pourcentage (%)</string>
+    <string name="discount_fixed">Montant fixe ($)</string>
+    <string name="error_discount_value">Valeur de remise invalide</string>
+    <string name="error_discount_percent">Le pourcentage ne peut dépasser 100</string>
+    <string name="error_discount_fixed">La remise ne peut dépasser le prix</string>
+    <string name="btn_apply_discount">🏷️ Remise</string>
+    <string name="btn_remove_discount">Retirer la remise</string>
+    <string name="label_subtotal">Sous-total</string>
+    <string name="label_discount">Remise</string>
+    <string name="hint_discount_scope">Portée de la remise</string>
+    <string name="hint_discount_min_units">Min. unités</string>
+    <string name="scope_all">Toutes les unités</string>
+    <string name="scope_first">Première unité seulement</string>
+    <string name="scope_threshold">À partir de N unités</string>
+    <string name="error_discount_min_units">Minimum 2 unités</string>
 </resources>

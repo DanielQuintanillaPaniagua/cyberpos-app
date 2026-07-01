@@ -87,6 +87,21 @@
                 android:layout_marginTop="3dp"
                 android:fontFamily="monospace"
                 android:textSize="9sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnShareReceipt"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="28dp"
+                android:layout_marginTop="2dp"
+                android:fontFamily="monospace"
+                android:minHeight="0dp"
+                android:minWidth="0dp"
+                android:paddingHorizontal="4dp"
+                android:paddingVertical="0dp"
+                android:text="📄 recibo"
+                android:textColor="@color/neon_green"
+                android:textSize="9sp" />
         </LinearLayout>
     </LinearLayout>
 

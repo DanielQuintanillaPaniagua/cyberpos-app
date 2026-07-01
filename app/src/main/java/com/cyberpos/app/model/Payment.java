@@ -20,6 +20,8 @@ package com.cyberpos.app.model;
 import com.google.firebase.firestore.ServerTimestamp;
 
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 public class Payment {
 
@@ -31,6 +33,18 @@ public class Payment {
     private String lightningInvoice;
     private String btcPayInvoiceId;
     private String status;
+
+    private List<Map<String, Object>> cartItems;
+
+    private String merchantName;
+    private double ivaPercent;
+    private double isrPercent;
+
+    // ES: Descuento aplicado (F8) — tipo global CartTotals.DISC_* y monto total descontado en USD
+    // EN: Applied discount (F8) — global type CartTotals.DISC_* and total discounted amount in USD
+    private String discountType = "";
+    private double discountValue = 0;
+    private double discountUsd = 0;
 
     @ServerTimestamp
     private Date createdAt;
@@ -73,6 +87,27 @@ public class Payment {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public List<Map<String, Object>> getCartItems() { return cartItems; }
+    public void setCartItems(List<Map<String, Object>> cartItems) { this.cartItems = cartItems; }
+
+    public String getMerchantName() { return merchantName; }
+    public void setMerchantName(String merchantName) { this.merchantName = merchantName; }
+
+    public double getIvaPercent() { return ivaPercent; }
+    public void setIvaPercent(double ivaPercent) { this.ivaPercent = ivaPercent; }
+
+    public double getIsrPercent() { return isrPercent; }
+    public void setIsrPercent(double isrPercent) { this.isrPercent = isrPercent; }
+
+    public String getDiscountType() { return discountType; }
+    public void setDiscountType(String discountType) { this.discountType = discountType; }
+
+    public double getDiscountValue() { return discountValue; }
+    public void setDiscountValue(double discountValue) { this.discountValue = discountValue; }
+
+    public double getDiscountUsd() { return discountUsd; }
+    public void setDiscountUsd(double discountUsd) { this.discountUsd = discountUsd; }
 
     public Date getCreatedAt() { return createdAt; }
     public void setCreatedAt(Date createdAt) { this.createdAt = createdAt; }
