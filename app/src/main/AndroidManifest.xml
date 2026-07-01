@@ -131,6 +131,12 @@
             android:windowSoftInputMode="adjustResize" />
 
         <activity
+            android:name=".BtcPayConfigActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
             android:name=".MerchantMonedaActivity"
             android:exported="false"
             android:screenOrientation="portrait"

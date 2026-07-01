@@ -32,6 +32,11 @@ public class CyberPOSApp extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+
+        // ES: Credenciales BTCPay cifradas del dispositivo — antes de cualquier uso de BtcPayClient
+        // EN: Device-encrypted BTCPay credentials — before any BtcPayClient use
+        BtcPayConfig.init(this);
+
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
 
         // ES: Aplicar idioma guardado (por defecto español)

@@ -43,24 +43,23 @@ import java.util.concurrent.Executors;
  *     HTTP (conexión, cabecera de autorización, timeouts, lectura y parseo) que
  *     antes estaba duplicada en PaymentActivity y CustomerHomeActivity.
  *
- *     ⚠️ SEGURIDAD: este es el ÚNICO archivo que lee BTCPAY_API_KEY. En producción,
- *     estos métodos deben apuntar a un backend propio (p. ej. Cloud Functions) que
- *     guarde la key del lado servidor, en lugar de llamar a BTCPay directamente.
- *     Ver la nota de seguridad en el README.
+ *     SEGURIDAD: las credenciales (URL, Store ID, API key) vienen de BtcPayConfig:
+ *     las que el comerciante guardó cifradas en el dispositivo, con fallback a
+ *     BuildConfig (local.properties) para desarrollo. La key ya NO se compila en
+ *     el APK de producción — cada comerciante configura la suya en Ajustes →
+ *     Servidor BTCPay.
  *
  * EN: Single client for the BTCPay Server API. Centralizes all HTTP plumbing
  *     (connection, auth header, timeouts, reading and parsing) that used to be
  *     duplicated across PaymentActivity and CustomerHomeActivity.
  *
- *     ⚠️ SECURITY: this is the ONLY file that reads BTCPAY_API_KEY. For production,
- *     these calls should target a backend (e.g. Cloud Functions) that keeps the key
- *     server-side instead of talking to BTCPay directly.
+ *     SECURITY: credentials (URL, Store ID, API key) come from BtcPayConfig:
+ *     the ones the merchant saved encrypted on the device, falling back to
+ *     BuildConfig (local.properties) for development. The key is NO longer
+ *     compiled into production APKs — each merchant sets their own under
+ *     Settings → BTCPay Server.
  */
 public final class BtcPayClient {
-
-    private static final String BASE_URL = BuildConfig.BTCPAY_URL;
-    private static final String STORE_ID = BuildConfig.BTCPAY_STORE_ID;
-    private static final String API_KEY  = BuildConfig.BTCPAY_API_KEY;
 
     private static final int CONNECT_TIMEOUT_MS = 15_000;
     private static final int READ_TIMEOUT_MS    = 15_000;
@@ -162,7 +161,7 @@ public final class BtcPayClient {
             } catch (JSONException e) {
                 throw new BtcPayException(-1, null, e.getMessage(), e);
             }
-            String resp = request("POST", "/api/v1/stores/" + STORE_ID + "/invoices", body);
+            String resp = request("POST", "/api/v1/stores/" + BtcPayConfig.getStoreId() + "/invoices", body);
             return parseInvoice(resp);
         }, cb);
     }
@@ -170,15 +169,35 @@ public final class BtcPayClient {
     /** ES: Obtiene una factura (monto, moneda, estado). / EN: Fetches an invoice (amount, currency, status). */
     public static void getInvoice(String invoiceId, Callback<Invoice> cb) {
         runAsync(() -> parseInvoice(
-                request("GET", "/api/v1/stores/" + STORE_ID + "/invoices/" + invoiceId, null)),
+                request("GET", "/api/v1/stores/" + BtcPayConfig.getStoreId() + "/invoices/" + invoiceId, null)),
                 cb);
+    }
+
+    /**
+     * ES: Prueba credenciales SIN guardarlas: consulta la tienda y devuelve su
+     *     nombre. Usado por BtcPayConfigActivity antes de guardar.
+     * EN: Tests credentials WITHOUT saving them: fetches the store and returns
+     *     its name. Used by BtcPayConfigActivity before saving.
+     */
+    public static void testConnection(String baseUrl, String storeId, String apiKey,
+                                      Callback<String> cb) {
+        final String base = baseUrl.endsWith("/")
+                ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+        runAsync(() -> {
+            String resp = request("GET", base + "/api/v1/stores/" + storeId, apiKey, null);
+            try {
+                return new JSONObject(resp).optString("name", storeId);
+            } catch (JSONException e) {
+                throw new BtcPayException(-1, resp, e.getMessage(), e);
+            }
+        }, cb);
     }
 
     /** ES: Obtiene los métodos de pago de una factura. / EN: Fetches an invoice's payment methods. */
     public static void getPaymentMethods(String invoiceId, Callback<List<PaymentMethod>> cb) {
         runAsync(() -> {
             String resp = request("GET",
-                    "/api/v1/stores/" + STORE_ID + "/invoices/" + invoiceId + "/payment-methods",
+                    "/api/v1/stores/" + BtcPayConfig.getStoreId() + "/invoices/" + invoiceId + "/payment-methods",
                     null);
             try {
                 JSONArray arr = new JSONArray(resp);
@@ -236,12 +255,17 @@ public final class BtcPayClient {
      */
     private static String request(String method, String path, @Nullable String jsonBody)
             throws BtcPayException {
+        return request(method, BtcPayConfig.getUrl() + path, BtcPayConfig.getApiKey(), jsonBody);
+    }
+
+    private static String request(String method, String fullUrl, String apiKey,
+                                  @Nullable String jsonBody) throws BtcPayException {
         HttpURLConnection conn = null;
         try {
-            URL url = new URL(BASE_URL + path);
+            URL url = new URL(fullUrl);
             conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod(method);
-            conn.setRequestProperty("Authorization", "token " + API_KEY);
+            conn.setRequestProperty("Authorization", "token " + apiKey);
             conn.setConnectTimeout(CONNECT_TIMEOUT_MS);
             conn.setReadTimeout(READ_TIMEOUT_MS);
 

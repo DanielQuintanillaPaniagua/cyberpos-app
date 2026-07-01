@@ -89,6 +89,8 @@ public class MerchantAjustesActivity extends AppCompatActivity {
             startActivity(new Intent(this, NotificacionesMerchantActivity.class)));
         binding.rowPaymentScreen.setOnClickListener(v ->
             startActivity(new Intent(this, PantallaCobroActivity.class)));
+        binding.rowBtcpay.setOnClickListener(v ->
+            startActivity(new Intent(this, BtcPayConfigActivity.class)));
 
         binding.rowLanguage.setOnClickListener(v ->
             startActivity(new Intent(this, IdiomaActivity.class)));

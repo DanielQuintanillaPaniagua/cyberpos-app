@@ -285,6 +285,26 @@
 
     <!-- BTCPay Server / payment settled -->
     <string name="error_btcpay_invoice">Error al crear factura en BTCPay</string>
+
+    <!-- BtcPayConfigActivity -->
+    <string name="settings_btcpay">Servidor BTCPay</string>
+    <string name="title_btcpay_config">SERVIDOR BTCPAY</string>
+    <string name="section_btcpay_credentials">CREDENCIALES DEL SERVIDOR</string>
+    <string name="hint_btcpay_url">URL del servidor (https://…)</string>
+    <string name="hint_btcpay_store_id">Store ID</string>
+    <string name="hint_btcpay_api_key">API Key</string>
+    <string name="btn_btcpay_test">Probar conexión</string>
+    <string name="btn_btcpay_save">Guardar</string>
+    <string name="msg_btcpay_saved">Configuración de BTCPay guardada</string>
+    <string name="msg_btcpay_testing">Probando conexión…</string>
+    <string name="msg_btcpay_test_ok">✓ Conectado a la tienda: %1$s</string>
+    <string name="error_btcpay_test">No se pudo conectar: %1$s</string>
+    <string name="error_btcpay_url_required">Ingresa la URL de tu BTCPay Server</string>
+    <string name="error_btcpay_url_scheme">La URL debe empezar con http:// o https://</string>
+    <string name="error_btcpay_store_required">Ingresa el Store ID</string>
+    <string name="error_btcpay_key_required">Ingresa la API Key</string>
+    <string name="info_btcpay_config">Tus credenciales se guardan cifradas SOLO en este dispositivo (Android Keystore) — nunca se suben a la nube ni se incluyen en la app. Crea la API Key en tu BTCPay Server con el permiso mínimo: btcpay.store.cancreateinvoice y btcpay.store.canviewinvoices.</string>
+    <string name="warn_btcpay_http">⚠ HTTP sin cifrar: solo funciona en compilaciones de desarrollo. En producción usa https://.</string>
     <string name="label_payment_received">PAGO RECIBIDO</string>
     <string name="label_payment_received_subtitle">Bitcoin recibido vía Lightning Network</string>
     <string name="btn_new_payment_reset">⚡ Nuevo Cobro</string>
