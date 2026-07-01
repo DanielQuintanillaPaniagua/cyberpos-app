@@ -39,8 +39,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
@@ -57,24 +55,16 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.journeyapps.barcodescanner.BarcodeCallback;
 import com.journeyapps.barcodescanner.BarcodeResult;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class CustomerHomeActivity extends AppCompatActivity {
 
     private static final int CAMERA_PERMISSION_REQUEST = 101;
-    private static final double WALLET_BTC = 0.00150000;
     private static final long POLL_INTERVAL_MS = 3_000L;
 
     private static final String PLAY_STORE_MUUN   = "market://details?id=net.muun.apollo";
@@ -109,30 +99,30 @@ public class CustomerHomeActivity extends AppCompatActivity {
     private String paymentFirestoreDocId = null;
     private final Runnable invoicePollRunnable = this::pollInvoiceStatusOnThread;
 
+    // ES: Comerciante del pago liquidado — usado para "Calificar este negocio" (F11)
+    // EN: Merchant of the settled payment — used for "Rate this business" (F11)
+    private String settledMerchantId = null;
+
+    // ES: Comerciante de la factura escaneada — usado para "Ver perfil del negocio" (F12)
+    // EN: Merchant of the scanned invoice — used for "View business profile" (F12)
+    private String scannedMerchantId = null;
+
     private final PriceService.Listener priceListener = price -> {
         btcUsdRate = price;
-        binding.tvLivePrice.setText(
-                String.format(Locale.US, "1 BTC = $%,.0f  ● LIVE", price));
+        binding.tvLivePrice.setText(MoneyFormatter.btcTicker(this) + "  ● LIVE");
         binding.tvLivePrice.setTextColor(getColor(R.color.neon_green));
-        binding.tvWalletUsd.setText(
-                String.format(Locale.US, "≈ $%.2f USD", WALLET_BTC * price));
 
         if (scannedType == PaymentType.BTCPAY_INVOICE && pendingBtcPayUsd > 0 && scannedBtcAmount == 0) {
             double btc = pendingBtcPayUsd / price;
             scannedBtcAmount = btc;
             pendingBtcPayUsd = 0;
             binding.tvBtcAmount.setText(String.format(Locale.US, "%.8f", btc));
-            binding.tvInvoiceBtc.setText(String.format(Locale.US, "%.8f BTC", btc));
-            String usdStr = getString(R.string.format_usd_equivalent, btc * price);
-            binding.tvUsdEquivalent.setText(usdStr);
-            binding.tvInvoiceUsd.setText(usdStr);
+            String equiv = MoneyFormatter.equivalent(this, btc);
+            binding.tvUsdEquivalent.setText(equiv);
             binding.btnPayNow.setEnabled(true);
         } else if (scannedInvoice != null && scannedBtcAmount > 0) {
-            double usd = scannedBtcAmount * price;
-            binding.tvInvoiceUsd.setText(getString(R.string.format_usd_equivalent, usd));
-            binding.tvUsdEquivalent.setText(getString(R.string.format_usd_equivalent, usd));
-        } else {
-            refreshAmountUsd();
+            String equiv = MoneyFormatter.equivalent(this, scannedBtcAmount);
+            binding.tvUsdEquivalent.setText(equiv);
         }
     };
 
@@ -145,79 +135,31 @@ public class CustomerHomeActivity extends AppCompatActivity {
         auth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
-        setupTabs();
-        setupAmountInput();
+        showScanIdleState();
         setupPayButton();
         setupPaymentConfirmScreen();
         setupBottomNav();
         binding.btnScanAgain.setOnClickListener(v -> resetToScanning());
+        binding.btnCancelScan.setOnClickListener(v -> resetToScanning());
         binding.btnOpenSettings.setOnClickListener(v -> openAppSettings());
         requestCameraIfNeeded();
     }
 
-    // ── Pestañas / Tabs ──────────────────────────────────────────────────────
+    // ── Estado antes de escanear / Pre-scan state ─────────────────────────────
 
-    private void setupTabs() {
-        binding.toggleGroup.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
-            if (!isChecked) return;
-            boolean isScan = checkedId == R.id.tabScan;
-            binding.layoutAmount.setVisibility(isScan ? View.GONE : View.VISIBLE);
-            if (isScan) {
-                if (scannedInvoice == null) {
-                    binding.layoutScan.setVisibility(View.VISIBLE);
-                    binding.layoutInvoiceDetails.setVisibility(View.GONE);
-                    binding.btnPayNow.setEnabled(false);
-                    resumeScannerIfPermitted();
-                } else {
-                    binding.layoutScan.setVisibility(View.GONE);
-                    binding.layoutInvoiceDetails.setVisibility(View.VISIBLE);
-                    binding.btnPayNow.setEnabled(scannedBtcAmount > 0);
-                }
-            } else {
-                pauseScanner();
-                binding.layoutScan.setVisibility(View.GONE);
-                binding.layoutInvoiceDetails.setVisibility(View.GONE);
-                binding.btnPayNow.setEnabled(true);
-            }
-        });
-        binding.btnPayNow.setEnabled(false);
-        binding.toggleGroup.check(R.id.tabScan);
-    }
-
-    // ── Entrada de monto (pestaña manual) / Amount input (manual tab) ────────
-
-    private void setupAmountInput() {
-        binding.etBtcAmount.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int i, int i1, int i2) {}
-            @Override public void onTextChanged(CharSequence s, int i, int i1, int i2) {}
-            @Override
-            public void afterTextChanged(Editable s) {
-                String raw = s.toString();
-                binding.tvBtcAmount.setText(
-                        raw.isEmpty() ? getString(R.string.label_btc_amount) : raw);
-                refreshAmountUsd();
-            }
-        });
-    }
-
-    private void refreshAmountUsd() {
-        if (scannedInvoice != null) return;
-        String raw = binding.etBtcAmount.getText() != null
-                ? binding.etBtcAmount.getText().toString().trim() : "";
-        if (raw.isEmpty() || btcUsdRate <= 0) {
-            binding.tvAmountUsd.setText(R.string.label_usd_equivalent);
-            binding.tvUsdEquivalent.setText(R.string.label_usd_equivalent);
-            return;
-        }
-        try {
-            double btc = Double.parseDouble(raw);
-            double usd = btc * btcUsdRate;
-            String formatted = getString(R.string.format_usd_equivalent, usd);
-            binding.tvAmountUsd.setText(formatted);
-            binding.tvUsdEquivalent.setText(formatted);
-        } catch (NumberFormatException e) {
-            binding.tvAmountUsd.setText(R.string.label_usd_equivalent);
-        }
+    /**
+     * ES: Solo cámara — sin monto, sin botones de pago. Se muestra al abrir la
+     *     pantalla y cada vez que se cancela/reinicia el escaneo.
+     * EN: Camera only — no amount, no payment buttons. Shown on screen open and
+     *     whenever the scan is cancelled/reset.
+     */
+    private void showScanIdleState() {
+        binding.layoutScan.setVisibility(View.VISIBLE);
+        binding.layoutInvoiceDetails.setVisibility(View.GONE);
+        binding.layoutScanAmountHeader.setVisibility(View.GONE);
+        binding.btnPayNow.setVisibility(View.GONE);
+        binding.btnCancelScan.setVisibility(View.GONE);
+        resumeScannerIfPermitted();
     }
 
     // ── Botón de pago / Pay button ───────────────────────────────────────────
@@ -234,6 +176,11 @@ public class CustomerHomeActivity extends AppCompatActivity {
         binding.btnConfirmTestPayment.setOnClickListener(v -> openWalletIntent());
         binding.btnCancelPayment.setOnClickListener(v -> onCancelPayment());
         binding.btnNewScan.setOnClickListener(v -> resetToScanning());
+        binding.btnRateBusiness.setOnClickListener(v ->
+                RatingHelper.showRatingDialog(this, db, auth, settledMerchantId, paymentFirestoreDocId,
+                        () -> binding.btnRateBusiness.setVisibility(View.GONE)));
+        binding.btnViewMerchantProfile.setOnClickListener(v ->
+                MerchantProfileHelper.show(this, db, scannedMerchantId));
     }
 
     // ── Inicio del pago / Payment initiation ─────────────────────────────────
@@ -266,83 +213,63 @@ public class CustomerHomeActivity extends AppCompatActivity {
     }
 
     private void fetchPaymentLink(String invoiceId, String customerName, String payerUid) {
-        new Thread(() -> {
-            HttpURLConnection conn = null;
-            try {
-                String endpoint = BuildConfig.BTCPAY_URL + "/api/v1/stores/"
-                        + BuildConfig.BTCPAY_STORE_ID + "/invoices/"
-                        + invoiceId + "/payment-methods";
-                conn = (HttpURLConnection) new URL(endpoint).openConnection();
-                conn.setRequestProperty("Authorization", "token " + BuildConfig.BTCPAY_API_KEY);
-                conn.setConnectTimeout(10_000);
-                conn.setReadTimeout(10_000);
+        BtcPayClient.getPaymentMethods(invoiceId,
+                new BtcPayClient.Callback<List<BtcPayClient.PaymentMethod>>() {
+            @Override
+            public void onSuccess(List<BtcPayClient.PaymentMethod> methods) {
+                if (isFinishing() || isDestroyed()) return;
+                String destAddress = null;
+                String link = null;
 
-                int code = conn.getResponseCode();
-                if (code == 200) {
-                    JSONArray methods = new JSONArray(readStream(conn.getInputStream()));
-                    String destAddress = null;
-                    String link = null;
-
-                    for (int i = 0; i < methods.length(); i++) {
-                        JSONObject m = methods.getJSONObject(i);
-                        if ("BTC-CHAIN".equalsIgnoreCase(m.optString("paymentMethodId", ""))) {
-                            String addr = m.optString("destination", null);
-                            if (addr != null && !addr.isEmpty()) {
-                                destAddress = addr;
-                                link = m.optString("paymentLink", null);
-                                break;
-                            }
+                for (BtcPayClient.PaymentMethod m : methods) {
+                    if ("BTC-CHAIN".equalsIgnoreCase(m.paymentMethodId)) {
+                        if (m.destination != null && !m.destination.isEmpty()) {
+                            destAddress = m.destination;
+                            link = m.paymentLink;
+                            break;
                         }
                     }
-
-                    // ES: Alternativa: construir paymentLink desde la dirección destino si la API no devolvió uno
-                    // EN: Fallback: build paymentLink from destination address if API didn't return one
-                    if ((link == null || link.isEmpty()) && destAddress != null) {
-                        link = "bitcoin:" + destAddress;
-                        if (scannedBtcAmount > 0) {
-                            link += "?amount=" + String.format(Locale.US, "%.8f", scannedBtcAmount);
-                        }
-                    }
-
-                    final String finalLink = link;
-                    mainHandler.post(() -> {
-                        if (isFinishing() || isDestroyed()) return;
-                        if (finalLink != null) {
-                            paymentLink = finalLink;
-                            savePayerInfoToFirestore(invoiceId, customerName, payerUid);
-                            showWaitingForPayment(scannedBtcAmount);
-                            openWalletIntent();
-                            startPolling();
-                        } else {
-                            resetPayButton();
-                            Toast.makeText(this, R.string.error_no_btc_address,
-                                    Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                } else {
-                    final int finalCode = code;
-                    mainHandler.post(() -> {
-                        if (isFinishing() || isDestroyed()) return;
-                        resetPayButton();
-                        Toast.makeText(this,
-                                getString(R.string.error_payment_methods_fetch, finalCode),
-                                Toast.LENGTH_SHORT).show();
-                    });
                 }
-            } catch (Exception e) {
-                Log.e("BTCPay", "fetchPaymentLink exception", e);
-                final String msg = e.getMessage();
-                mainHandler.post(() -> {
-                    if (isFinishing() || isDestroyed()) return;
+
+                // ES: Alternativa: construir paymentLink desde la dirección destino si la API no devolvió uno
+                // EN: Fallback: build paymentLink from destination address if API didn't return one
+                if ((link == null || link.isEmpty()) && destAddress != null) {
+                    link = "bitcoin:" + destAddress;
+                    if (scannedBtcAmount > 0) {
+                        link += "?amount=" + String.format(Locale.US, "%.8f", scannedBtcAmount);
+                    }
+                }
+
+                if (link != null) {
+                    paymentLink = link;
+                    savePayerInfoToFirestore(invoiceId, customerName, payerUid);
+                    showWaitingForPayment(scannedBtcAmount);
+                    openWalletIntent();
+                    startPolling();
+                } else {
                     resetPayButton();
-                    Toast.makeText(this,
-                            msg != null ? msg : getString(R.string.error_btcpay_invoice),
+                    Toast.makeText(CustomerHomeActivity.this, R.string.error_no_btc_address,
                             Toast.LENGTH_SHORT).show();
-                });
-            } finally {
-                if (conn != null) conn.disconnect();
+                }
             }
-        }).start();
+
+            @Override
+            public void onError(BtcPayClient.BtcPayException e) {
+                if (isFinishing() || isDestroyed()) return;
+                resetPayButton();
+                if (e.httpCode >= 0) {
+                    Toast.makeText(CustomerHomeActivity.this,
+                            getString(R.string.error_payment_methods_fetch, e.httpCode),
+                            Toast.LENGTH_SHORT).show();
+                } else {
+                    Log.e("BTCPay", "fetchPaymentLink exception", e);
+                    Toast.makeText(CustomerHomeActivity.this,
+                            e.getMessage() != null ? e.getMessage()
+                                    : getString(R.string.error_btcpay_invoice),
+                            Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
     }
 
     // ── Intent de la wallet / Wallet intent ──────────────────────────────────
@@ -417,20 +344,38 @@ public class CustomerHomeActivity extends AppCompatActivity {
                 });
     }
 
+    // ── Perfil del negocio (F12) / Business profile (F12) ────────────────────
+
+    private void resolveMerchantForInvoice(String invoiceId) {
+        scannedMerchantId = null;
+        binding.btnViewMerchantProfile.setVisibility(View.GONE);
+
+        db.collection("payments")
+                .whereEqualTo("btcPayInvoiceId", invoiceId)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    if (isFinishing() || isDestroyed() || snapshot.isEmpty()) return;
+                    // ES: Ignorar resultado si el cliente ya escaneó otro QR mientras se resolvía este
+                    // EN: Ignore result if the customer already scanned another QR while this resolved
+                    if (!invoiceId.equals(scannedInvoice)) return;
+                    String merchantId = snapshot.getDocuments().get(0).getString("merchantId");
+                    if (merchantId != null && !merchantId.isEmpty()) {
+                        scannedMerchantId = merchantId;
+                        binding.btnViewMerchantProfile.setVisibility(View.VISIBLE);
+                    }
+                });
+    }
+
     // ── Superposición de espera / Waiting overlay ────────────────────────────
 
     private void showWaitingForPayment(double btcAmount) {
         binding.tvConfirmBtcAmount.setText(
                 String.format(Locale.US, "%.8f BTC", btcAmount));
-        if (btcUsdRate > 0) {
-            binding.tvConfirmUsd.setText(
-                    getString(R.string.format_usd_equivalent, btcAmount * btcUsdRate));
-        } else {
-            binding.tvConfirmUsd.setText("");
-        }
+        binding.tvConfirmUsd.setText(MoneyFormatter.equivalent(this, btcAmount));
         binding.tvPaymentStatus.setText("Esperando confirmación de pago...");
         binding.btnConfirmTestPayment.setText("Abrir wallet");
-        binding.btnPayNow.setText(R.string.btn_pay_now);
+        binding.btnPayNow.setText(R.string.btn_open_wallet_pay);
         binding.btnPayNow.setEnabled(true);
         binding.layoutPaymentConfirm.setVisibility(View.VISIBLE);
     }
@@ -455,40 +400,25 @@ public class CustomerHomeActivity extends AppCompatActivity {
 
     private void pollInvoiceStatusOnThread() {
         if (pollingStopped || scannedInvoice == null) return;
-        new Thread(() -> {
-            HttpURLConnection conn = null;
-            try {
-                URL url = new URL(BuildConfig.BTCPAY_URL + "/api/v1/stores/"
-                        + BuildConfig.BTCPAY_STORE_ID + "/invoices/" + scannedInvoice);
-                conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestProperty("Authorization", "token " + BuildConfig.BTCPAY_API_KEY);
-                conn.setConnectTimeout(10_000);
-                conn.setReadTimeout(10_000);
-
-                String status = "";
-                if (conn.getResponseCode() == 200) {
-                    JSONObject json = new JSONObject(readStream(conn.getInputStream()));
-                    status = json.optString("status", "");
+        BtcPayClient.getInvoice(scannedInvoice, new BtcPayClient.Callback<BtcPayClient.Invoice>() {
+            @Override
+            public void onSuccess(BtcPayClient.Invoice invoice) {
+                if (isFinishing() || isDestroyed()) return;
+                String status = invoice.status;
+                if ("Settled".equals(status) || "Complete".equals(status)) {
+                    onPaymentSettled();
+                } else if (!pollingStopped) {
+                    mainHandler.postDelayed(invoicePollRunnable, POLL_INTERVAL_MS);
                 }
-                final String finalStatus = status;
-                mainHandler.post(() -> {
-                    if (isFinishing() || isDestroyed()) return;
-                    if ("Settled".equals(finalStatus) || "Complete".equals(finalStatus)) {
-                        onPaymentSettled();
-                    } else if (!pollingStopped) {
-                        mainHandler.postDelayed(invoicePollRunnable, POLL_INTERVAL_MS);
-                    }
-                });
-            } catch (Exception e) {
-                mainHandler.post(() -> {
-                    if (!pollingStopped && !isFinishing() && !isDestroyed()) {
-                        mainHandler.postDelayed(invoicePollRunnable, POLL_INTERVAL_MS);
-                    }
-                });
-            } finally {
-                if (conn != null) conn.disconnect();
             }
-        }).start();
+
+            @Override
+            public void onError(BtcPayClient.BtcPayException e) {
+                if (!pollingStopped && !isFinishing() && !isDestroyed()) {
+                    mainHandler.postDelayed(invoicePollRunnable, POLL_INTERVAL_MS);
+                }
+            }
+        });
     }
 
     private void onPaymentSettled() {
@@ -496,14 +426,71 @@ public class CustomerHomeActivity extends AppCompatActivity {
         if (paymentFirestoreDocId != null) {
             db.collection("payments").document(paymentFirestoreDocId)
                     .update("status", "settled");
+            loadMerchantForRating(paymentFirestoreDocId);
         }
         binding.layoutPaymentConfirm.setVisibility(View.GONE);
         binding.layoutPaymentSent.setVisibility(View.VISIBLE);
     }
 
+    // ── Calificación del comerciante (F11) / Merchant rating (F11) ───────────
+
+    private void loadMerchantForRating(String paymentDocId) {
+        db.collection("payments").document(paymentDocId).get()
+                .addOnSuccessListener(doc -> {
+                    if (isFinishing() || isDestroyed() || !doc.exists()) return;
+                    String merchantId = doc.getString("merchantId");
+                    Boolean rated = doc.getBoolean("rated");
+                    if (merchantId != null && !merchantId.isEmpty()
+                            && (rated == null || !rated)) {
+                        settledMerchantId = merchantId;
+                        binding.btnRateBusiness.setVisibility(View.VISIBLE);
+                    }
+                    if (merchantId != null && !merchantId.isEmpty()) {
+                        Double amountUsd = doc.getDouble("amountUsd");
+                        awardLoyaltyPoints(merchantId, doc.getString("merchantName"),
+                                amountUsd != null ? amountUsd : 0);
+                    }
+                });
+    }
+
+    // ── Puntos de lealtad (F13) / Loyalty points (F13) ───────────────────────
+
+    private void awardLoyaltyPoints(String merchantId, String merchantName, double amountUsd) {
+        if (auth.getCurrentUser() == null || amountUsd <= 0) return;
+        String customerId = auth.getCurrentUser().getUid();
+
+        db.collection("users").document(merchantId)
+                .collection("configuracion").document("lealtad")
+                .get()
+                .addOnSuccessListener(doc -> {
+                    if (!doc.exists()) return;
+                    double puntosPorDolar = parseDoubleOrZero(doc.getString("puntosPorDolar"));
+                    if (puntosPorDolar <= 0) return;
+                    long puntosGanados = Math.round(amountUsd * puntosPorDolar);
+                    if (puntosGanados <= 0) return;
+
+                    Map<String, Object> update = new HashMap<>();
+                    update.put("puntos", com.google.firebase.firestore.FieldValue.increment(puntosGanados));
+                    update.put("merchantName", merchantName != null ? merchantName : "");
+
+                    db.collection("customers").document(customerId)
+                            .collection("puntos").document(merchantId)
+                            .set(update, com.google.firebase.firestore.SetOptions.merge());
+                });
+    }
+
+    private static double parseDoubleOrZero(String s) {
+        if (s == null || s.isEmpty()) return 0;
+        try {
+            return Double.parseDouble(s);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
     private void resetPayButton() {
         binding.btnPayNow.setEnabled(scannedBtcAmount > 0);
-        binding.btnPayNow.setText(R.string.btn_pay_now);
+        binding.btnPayNow.setText(R.string.btn_open_wallet_pay);
     }
 
     // ── Navegación inferior / Bottom nav ─────────────────────────────────────
@@ -681,76 +668,53 @@ public class CustomerHomeActivity extends AppCompatActivity {
         }
         scannedType = PaymentType.BTCPAY_INVOICE;
         pendingBtcPayUsd = 0;
+        resolveMerchantForInvoice(invoiceId);
 
         binding.tvInvoiceTypeLabel.setText(R.string.label_btcpay_fetching);
-        binding.tvNetworkValue.setText(R.string.value_network);
-        binding.tvInvoiceBtc.setText(R.string.label_price_loading);
-        binding.tvInvoiceUsd.setText("");
+        binding.tvBtcAmount.setText(R.string.label_price_loading);
+        binding.tvUsdEquivalent.setText("");
         binding.tvInvoiceId.setText(invoiceId);
         binding.layoutScan.setVisibility(View.GONE);
         binding.layoutInvoiceDetails.setVisibility(View.VISIBLE);
+        binding.layoutScanAmountHeader.setVisibility(View.VISIBLE);
+        binding.btnPayNow.setVisibility(View.VISIBLE);
+        binding.btnPayNow.setText(R.string.btn_open_wallet_pay);
         binding.btnPayNow.setEnabled(false);
+        binding.btnCancelScan.setVisibility(View.VISIBLE);
 
-        new Thread(() -> {
-            HttpURLConnection conn = null;
-            try {
-                String endpoint = BuildConfig.BTCPAY_URL + "/api/v1/stores/"
-                        + BuildConfig.BTCPAY_STORE_ID + "/invoices/" + invoiceId;
-                conn = (HttpURLConnection) new URL(endpoint).openConnection();
-                conn.setRequestProperty("Authorization", "token " + BuildConfig.BTCPAY_API_KEY);
-                conn.setConnectTimeout(10_000);
-                conn.setReadTimeout(10_000);
-
-                int code = conn.getResponseCode();
-                if (code == 200) {
-                    JSONObject json = new JSONObject(readStream(conn.getInputStream()));
-                    double invoiceAmount = json.getDouble("amount");
-                    String currency = json.optString("currency", "USD");
-
-                    mainHandler.post(() -> {
-                        if (isFinishing() || isDestroyed()) return;
-                        Double btc = null;
-                        if ("BTC".equalsIgnoreCase(currency)) {
-                            btc = invoiceAmount;
-                        } else if ("USD".equalsIgnoreCase(currency) && btcUsdRate > 0) {
-                            btc = invoiceAmount / btcUsdRate;
-                        } else if ("USD".equalsIgnoreCase(currency)) {
-                            pendingBtcPayUsd = invoiceAmount;
-                        }
-                        showPaymentDetails(invoiceId, btc, PaymentType.BTCPAY_INVOICE);
-                    });
-                } else {
-                    InputStream errStream = conn.getErrorStream();
-                    String errBody = errStream != null ? readStream(errStream) : "";
-                    final int finalCode = code;
-                    mainHandler.post(() -> {
-                        if (isFinishing() || isDestroyed()) return;
-                        Toast.makeText(this,
-                                getString(R.string.error_btcpay_fetch, finalCode),
-                                Toast.LENGTH_SHORT).show();
-                        resetToScanning();
-                    });
+        BtcPayClient.getInvoice(invoiceId, new BtcPayClient.Callback<BtcPayClient.Invoice>() {
+            @Override
+            public void onSuccess(BtcPayClient.Invoice invoice) {
+                if (isFinishing() || isDestroyed()) return;
+                double invoiceAmount = invoice.amount;
+                String currency = invoice.currency;
+                Double btc = null;
+                if ("BTC".equalsIgnoreCase(currency)) {
+                    btc = invoiceAmount;
+                } else if ("USD".equalsIgnoreCase(currency) && btcUsdRate > 0) {
+                    btc = invoiceAmount / btcUsdRate;
+                } else if ("USD".equalsIgnoreCase(currency)) {
+                    pendingBtcPayUsd = invoiceAmount;
                 }
-            } catch (Exception e) {
-                mainHandler.post(() -> {
-                    if (isFinishing() || isDestroyed()) return;
-                    Toast.makeText(this,
+                showPaymentDetails(invoiceId, btc, PaymentType.BTCPAY_INVOICE);
+            }
+
+            @Override
+            public void onError(BtcPayClient.BtcPayException e) {
+                if (isFinishing() || isDestroyed()) return;
+                if (e.httpCode >= 0) {
+                    Toast.makeText(CustomerHomeActivity.this,
+                            getString(R.string.error_btcpay_fetch, e.httpCode),
+                            Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(CustomerHomeActivity.this,
                             e.getMessage() != null ? e.getMessage()
                                     : getString(R.string.error_btcpay_invoice),
                             Toast.LENGTH_SHORT).show();
-                    resetToScanning();
-                });
-            } finally {
-                if (conn != null) conn.disconnect();
+                }
+                resetToScanning();
             }
-        }).start();
-    }
-
-    private static String readStream(InputStream is) {
-        Scanner sc = new Scanner(is, "UTF-8").useDelimiter("\\A");
-        String result = sc.hasNext() ? sc.next() : "";
-        sc.close();
-        return result;
+        });
     }
 
     // ── UI de detalles de pago compartida / Shared payment details UI ────────
@@ -762,54 +726,50 @@ public class CustomerHomeActivity extends AppCompatActivity {
         switch (type) {
             case LIGHTNING:
                 binding.tvInvoiceTypeLabel.setText(R.string.label_invoice_valid);
-                binding.tvNetworkValue.setText(R.string.value_network);
                 break;
             case BITCOIN_ONCHAIN:
                 binding.tvInvoiceTypeLabel.setText(R.string.label_address_valid);
-                binding.tvNetworkValue.setText(R.string.value_network_onchain);
                 break;
             case BTCPAY_INVOICE:
                 binding.tvInvoiceTypeLabel.setText(R.string.label_btcpay_invoice_valid);
-                binding.tvNetworkValue.setText(R.string.value_network);
                 break;
         }
 
         if (btc != null && btc > 0) {
             binding.tvBtcAmount.setText(String.format(Locale.US, "%.8f", btc));
-            binding.tvInvoiceBtc.setText(String.format(Locale.US, "%.8f BTC", btc));
-            if (btcUsdRate > 0) {
-                double usd = btc * btcUsdRate;
-                String usdStr = getString(R.string.format_usd_equivalent, usd);
-                binding.tvUsdEquivalent.setText(usdStr);
-                binding.tvInvoiceUsd.setText(usdStr);
-            } else {
-                binding.tvInvoiceUsd.setText("");
-            }
+            String equiv = MoneyFormatter.equivalent(this, btc);
+            binding.tvUsdEquivalent.setText(equiv);
         } else {
             switch (type) {
                 case LIGHTNING:
-                    binding.tvInvoiceBtc.setText(R.string.error_invoice_no_amount);
+                    binding.tvBtcAmount.setText(R.string.error_invoice_no_amount);
                     break;
                 case BITCOIN_ONCHAIN:
-                    binding.tvInvoiceBtc.setText(R.string.error_address_no_amount);
+                    binding.tvBtcAmount.setText(R.string.error_address_no_amount);
                     break;
                 case BTCPAY_INVOICE:
-                    binding.tvInvoiceBtc.setText(R.string.label_price_loading);
+                    binding.tvBtcAmount.setText(R.string.label_price_loading);
                     break;
             }
-            binding.tvInvoiceUsd.setText("");
+            binding.tvUsdEquivalent.setText("");
         }
 
         binding.tvInvoiceId.setText(id);
         binding.layoutScan.setVisibility(View.GONE);
         binding.layoutInvoiceDetails.setVisibility(View.VISIBLE);
+        binding.layoutScanAmountHeader.setVisibility(View.VISIBLE);
+        binding.btnPayNow.setVisibility(View.VISIBLE);
+        binding.btnPayNow.setText(R.string.btn_open_wallet_pay);
         binding.btnPayNow.setEnabled(btc != null && btc > 0);
+        binding.btnCancelScan.setVisibility(View.VISIBLE);
     }
 
     private void resetToScanning() {
         stopPolling();
         paymentLink = null;
         paymentFirestoreDocId = null;
+        settledMerchantId = null;
+        scannedMerchantId = null;
 
         scannedInvoice = null;
         scannedBtcAmount = 0;
@@ -818,13 +778,13 @@ public class CustomerHomeActivity extends AppCompatActivity {
 
         binding.layoutPaymentConfirm.setVisibility(View.GONE);
         binding.layoutPaymentSent.setVisibility(View.GONE);
-        binding.layoutInvoiceDetails.setVisibility(View.GONE);
-        binding.layoutScan.setVisibility(View.VISIBLE);
+        binding.btnRateBusiness.setVisibility(View.GONE);
+        binding.btnViewMerchantProfile.setVisibility(View.GONE);
         binding.tvBtcAmount.setText(R.string.label_btc_amount);
         binding.tvUsdEquivalent.setText(R.string.label_usd_equivalent);
         binding.btnPayNow.setText(R.string.btn_pay_now);
         binding.btnPayNow.setEnabled(false);
-        resumeScannerIfPermitted();
+        showScanIdleState();
     }
 
     // ── Navegación atrás entre superposiciones / Back navigation through overlays ─

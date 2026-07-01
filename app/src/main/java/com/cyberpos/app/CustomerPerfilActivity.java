@@ -145,8 +145,9 @@ public class CustomerPerfilActivity extends AppCompatActivity {
                 String tema = doc.getString("tema");
                 if (tema != null) binding.tvTemaValue.setText(tema);
 
-                String moneda = doc.getString("monedaPrincipal");
-                if (moneda != null) binding.tvMonedaValue.setText(moneda);
+                // ES: La moneda real de visualización vive en CurrencyPref (la fija el selector)
+                // EN: The real display currency lives in CurrencyPref (set by the selector screen)
+                binding.tvMonedaValue.setText(CurrencyPref.get(this));
 
                 String avatarBase64 = doc.getString("avatarBase64");
                 if (avatarBase64 != null && !avatarBase64.isEmpty()) {
@@ -163,6 +164,13 @@ public class CustomerPerfilActivity extends AppCompatActivity {
                     }).start();
                 }
             });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // ES: Refrescar al volver del selector de moneda / EN: Refresh when returning from the currency selector
+        binding.tvMonedaValue.setText(CurrencyPref.get(this));
     }
 
     private void enterEditMode() {

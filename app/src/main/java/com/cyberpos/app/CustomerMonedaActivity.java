@@ -38,8 +38,7 @@ public class CustomerMonedaActivity extends AppCompatActivity {
     private FirebaseFirestore db;
     private String selectedMoneda = "USD";
 
-    private final PriceService.Listener priceListener = price ->
-        binding.tvPrecioLive.setText(String.format(Locale.US, "$%,.0f USD", price));
+    private final PriceService.Listener priceListener = price -> updatePreview();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,11 +51,12 @@ public class CustomerMonedaActivity extends AppCompatActivity {
 
         binding.btnBack.setOnClickListener(v -> finish());
 
-        binding.rowUsd.setOnClickListener(v -> selectMoneda("USD"));
-        binding.rowBtc.setOnClickListener(v -> selectMoneda("BTC"));
-        binding.rowSat.setOnClickListener(v -> selectMoneda("SAT"));
-        binding.rowEur.setOnClickListener(v -> selectMoneda("EUR"));
-        binding.rowGtq.setOnClickListener(v -> selectMoneda("GTQ"));
+        selectedMoneda = CurrencyPref.get(this);
+
+        binding.rowUsd.setOnClickListener(v -> selectMoneda(CurrencyPref.USD));
+        binding.rowBtc.setOnClickListener(v -> selectMoneda(CurrencyPref.BTC));
+        binding.rowSat.setOnClickListener(v -> selectMoneda(CurrencyPref.SAT));
+        binding.rowEur.setOnClickListener(v -> selectMoneda(CurrencyPref.EUR));
 
         binding.btnGuardar.setOnClickListener(v -> saveConfig());
         loadConfig();
@@ -80,10 +80,10 @@ public class CustomerMonedaActivity extends AppCompatActivity {
     }
 
     private void updateUI() {
-        String[] codigos = {"USD", "BTC", "SAT", "EUR", "GTQ"};
+        String[] codigos = {"USD", "BTC", "SAT", "EUR"};
         TextView[] checks = {
             binding.checkUsd, binding.checkBtc,
-            binding.checkSat, binding.checkEur, binding.checkGtq
+            binding.checkSat, binding.checkEur
         };
         for (int i = 0; i < codigos.length; i++) {
             boolean selected = codigos[i].equals(selectedMoneda);
@@ -92,6 +92,32 @@ public class CustomerMonedaActivity extends AppCompatActivity {
                 ? getColor(R.color.neon_green)
                 : getColor(R.color.text_secondary));
         }
+        updatePreview();
+    }
+
+    /**
+     * ES: Muestra el precio de 1 BTC en la moneda actualmente seleccionada (aún sin guardar).
+     * EN: Shows the price of 1 BTC in the currently selected (not yet saved) currency.
+     */
+    private void updatePreview() {
+        double usd = PriceService.get().getUsdRate();
+        double eur = PriceService.get().getEurRate();
+        String text;
+        switch (selectedMoneda) {
+            case CurrencyPref.EUR:
+                text = eur > 0 ? String.format(Locale.US, "1 BTC = €%,.0f EUR", eur) : "—";
+                break;
+            case CurrencyPref.BTC:
+                text = "1 BTC";
+                break;
+            case CurrencyPref.SAT:
+                text = "100,000,000 sats";
+                break;
+            case CurrencyPref.USD:
+            default:
+                text = usd > 0 ? String.format(Locale.US, "1 BTC = $%,.0f USD", usd) : "—";
+        }
+        binding.tvPrecioLive.setText(text);
     }
 
     private void loadConfig() {
@@ -103,7 +129,11 @@ public class CustomerMonedaActivity extends AppCompatActivity {
             .addOnSuccessListener(doc -> {
                 if (doc.exists()) {
                     String moneda = doc.getString("monedaPrincipal");
-                    if (moneda != null) selectedMoneda = moneda;
+                    // ES: Ignorar GTQ heredado de una versión anterior / EN: Ignore GTQ left over from an older version
+                    if (moneda != null && !"GTQ".equals(moneda)) {
+                        selectedMoneda = moneda;
+                        CurrencyPref.set(this, moneda);
+                    }
                 }
                 updateUI();
             })
@@ -113,6 +143,10 @@ public class CustomerMonedaActivity extends AppCompatActivity {
     private void saveConfig() {
         if (auth.getCurrentUser() == null) return;
         String uid = auth.getCurrentUser().getUid();
+
+        // ES: Guardar localmente para lectura síncrona al formatear precios
+        // EN: Persist locally for synchronous reads when formatting prices
+        CurrencyPref.set(this, selectedMoneda);
 
         Map<String, Object> data = new HashMap<>();
         data.put("monedaPrincipal", selectedMoneda);

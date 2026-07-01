@@ -87,6 +87,32 @@
                 android:layout_marginTop="3dp"
                 android:fontFamily="monospace"
                 android:textSize="9sp" />
+
+            <!-- F13: Puntos de lealtad acumulados con este comerciante -->
+            <TextView
+                android:id="@+id/tvLoyaltyPoints"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:fontFamily="monospace"
+                android:textColor="@color/btc_orange"
+                android:textSize="9sp"
+                android:visibility="gone" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnShareReceipt"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="28dp"
+                android:layout_marginTop="2dp"
+                android:fontFamily="monospace"
+                android:minHeight="0dp"
+                android:minWidth="0dp"
+                android:paddingHorizontal="4dp"
+                android:paddingVertical="0dp"
+                android:text="📄 recibo"
+                android:textColor="@color/neon_green"
+                android:textSize="9sp" />
         </LinearLayout>
     </LinearLayout>
 

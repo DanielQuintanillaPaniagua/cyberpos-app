@@ -17,11 +17,17 @@
  */
 package com.cyberpos.app.model;
 
+import com.google.firebase.firestore.Exclude;
 import com.google.firebase.firestore.ServerTimestamp;
 
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 public class Payment {
+
+    @Exclude
+    private String id;
 
     private String merchantId;
     private double amountUsd;
@@ -31,6 +37,29 @@ public class Payment {
     private String lightningInvoice;
     private String btcPayInvoiceId;
     private String status;
+
+    private List<Map<String, Object>> cartItems;
+
+    private String merchantName;
+    private double ivaPercent;
+    private double isrPercent;
+
+    // ES: Descuento aplicado (F8) — tipo global CartTotals.DISC_* y monto total descontado en USD
+    // EN: Applied discount (F8) — global type CartTotals.DISC_* and total discounted amount in USD
+    private String discountType = "";
+    private double discountValue = 0;
+    private double discountUsd = 0;
+
+    // ES: Cobro mixto (F10) — efectivo USD + resto en Bitcoin. "bitcoin" = pago 100% BTC (default,
+    //     compatible con pagos históricos que no tienen este campo).
+    // EN: Mixed payment (F10) — USD cash + BTC remainder. "bitcoin" = 100% BTC payment (default,
+    //     compatible with historic payments missing this field).
+    private String paymentType = "bitcoin";
+    private double cashAmountUsd = 0;
+
+    // ES: true si el cliente ya calificó este pago (F11) — evita mostrar la opción dos veces.
+    // EN: true once the customer has rated this payment (F11) — prevents showing the option twice.
+    private boolean rated = false;
 
     @ServerTimestamp
     private Date createdAt;
@@ -49,6 +78,9 @@ public class Payment {
         this.status = "pending";
         this.createdAt = null; // ES: @ServerTimestamp rellena este campo / EN: @ServerTimestamp fills this
     }
+
+    @Exclude public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
     public String getMerchantId() { return merchantId; }
     public void setMerchantId(String merchantId) { this.merchantId = merchantId; }
@@ -73,6 +105,36 @@ public class Payment {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public List<Map<String, Object>> getCartItems() { return cartItems; }
+    public void setCartItems(List<Map<String, Object>> cartItems) { this.cartItems = cartItems; }
+
+    public String getMerchantName() { return merchantName; }
+    public void setMerchantName(String merchantName) { this.merchantName = merchantName; }
+
+    public double getIvaPercent() { return ivaPercent; }
+    public void setIvaPercent(double ivaPercent) { this.ivaPercent = ivaPercent; }
+
+    public double getIsrPercent() { return isrPercent; }
+    public void setIsrPercent(double isrPercent) { this.isrPercent = isrPercent; }
+
+    public String getDiscountType() { return discountType; }
+    public void setDiscountType(String discountType) { this.discountType = discountType; }
+
+    public double getDiscountValue() { return discountValue; }
+    public void setDiscountValue(double discountValue) { this.discountValue = discountValue; }
+
+    public double getDiscountUsd() { return discountUsd; }
+    public void setDiscountUsd(double discountUsd) { this.discountUsd = discountUsd; }
+
+    public String getPaymentType() { return paymentType; }
+    public void setPaymentType(String paymentType) { this.paymentType = paymentType; }
+
+    public double getCashAmountUsd() { return cashAmountUsd; }
+    public void setCashAmountUsd(double cashAmountUsd) { this.cashAmountUsd = cashAmountUsd; }
+
+    public boolean isRated() { return rated; }
+    public void setRated(boolean rated) { this.rated = rated; }
 
     public Date getCreatedAt() { return createdAt; }
     public void setCreatedAt(Date createdAt) { this.createdAt = createdAt; }

@@ -64,30 +64,70 @@ public class LoginActivity extends AppCompatActivity {
         setLoading(true);
 
         auth.signInWithEmailAndPassword(email, password)
-                .addOnSuccessListener(result -> routeByRole())
+                .addOnSuccessListener(result -> routeAfterLogin())
                 .addOnFailureListener(e -> {
                     setLoading(false);
                     Toast.makeText(this, R.string.login_failed_generic, Toast.LENGTH_LONG).show();
                 });
     }
 
+    // Called when user is already logged in (session restored) — skips 2FA
     private void routeByRole() {
         String uid = auth.getCurrentUser().getUid();
         db.collection("users").document(uid).get()
                 .addOnSuccessListener(doc -> {
                     String role = doc.exists() ? doc.getString("role") : null;
-                    Class<?> dest = "customer".equals(role) ? CustomerHomeActivity.class : MainActivity.class;
-                    Intent intent = new Intent(this, dest);
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    startActivity(intent);
-                    finish();
+                    navigateToMain(role);
+                })
+                .addOnFailureListener(e -> navigateToMain(null));
+    }
+
+    // Called after a fresh login — checks 2FA before navigating
+    private void routeAfterLogin() {
+        String uid = auth.getCurrentUser().getUid();
+        db.collection("users").document(uid).get()
+                .addOnSuccessListener(doc -> {
+                    String role = doc.exists() ? doc.getString("role") : null;
+                    check2FA(uid, role);
                 })
                 .addOnFailureListener(e -> {
-                    Intent intent = new Intent(this, MainActivity.class);
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    startActivity(intent);
-                    finish();
+                    setLoading(false);
+                    navigateToMain(null);
                 });
+    }
+
+    private void check2FA(String uid, String role) {
+        db.collection("users").document(uid)
+                .collection("configuracion").document("dos_fa")
+                .get()
+                .addOnSuccessListener(doc -> {
+                    setLoading(false);
+                    Boolean habilitado = doc.exists() ? doc.getBoolean("habilitado") : null;
+                    if (Boolean.TRUE.equals(habilitado)) {
+                        String metodo = doc.getString("metodo");
+                        Intent intent = new Intent(this, TwoFactorActivity.class);
+                        intent.putExtra(TwoFactorActivity.EXTRA_ROLE, role);
+                        intent.putExtra(TwoFactorActivity.EXTRA_METODO, metodo != null ? metodo : "email");
+                        intent.putExtra(TwoFactorActivity.EXTRA_EMAIL, auth.getCurrentUser().getEmail());
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        startActivity(intent);
+                        finish();
+                    } else {
+                        navigateToMain(role);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    setLoading(false);
+                    navigateToMain(role);
+                });
+    }
+
+    private void navigateToMain(String role) {
+        Class<?> dest = "customer".equals(role) ? CustomerHomeActivity.class : MainActivity.class;
+        Intent intent = new Intent(this, dest);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
 
     private void sendPasswordReset() {
@@ -95,6 +135,10 @@ public class LoginActivity extends AppCompatActivity {
 
         if (TextUtils.isEmpty(email)) {
             binding.tilEmail.setError(getString(R.string.forgot_password_enter_email));
+            return;
+        }
+        if (!isValidEmail(email)) {
+            binding.tilEmail.setError(getString(R.string.error_email_invalid));
             return;
         }
         binding.tilEmail.setError(null);
@@ -111,6 +155,10 @@ public class LoginActivity extends AppCompatActivity {
             binding.tilEmail.setError(getString(R.string.error_email_required));
             return false;
         }
+        if (!isValidEmail(email)) {
+            binding.tilEmail.setError(getString(R.string.error_email_invalid));
+            return false;
+        }
         binding.tilEmail.setError(null);
 
         if (TextUtils.isEmpty(password) || password.length() < 6) {
@@ -120,6 +168,16 @@ public class LoginActivity extends AppCompatActivity {
         binding.tilPassword.setError(null);
 
         return true;
+    }
+
+    /**
+     * ES: Valida solo el FORMATO del correo (sintaxis), no si la cuenta existe.
+     *     Correos de prueba bien formados (p. ej. test123@gmail.com) pasan sin problema.
+     * EN: Validates only the email FORMAT (syntax), not whether the account exists.
+     *     Well-formed test emails (e.g. test123@gmail.com) pass fine.
+     */
+    private static boolean isValidEmail(String email) {
+        return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches();
     }
 
     private void setLoading(boolean loading) {

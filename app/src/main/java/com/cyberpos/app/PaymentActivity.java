@@ -20,9 +20,11 @@ package com.cyberpos.app;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.BitmapFactory;
 import android.nfc.NfcAdapter;
-import android.util.Log;
+import android.util.Base64;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -37,8 +39,11 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 
 import com.cyberpos.app.databinding.ActivityPaymentBinding;
+import com.cyberpos.app.model.CartItem;
+import com.cyberpos.app.model.CartTotals;
 import com.cyberpos.app.model.Payment;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -46,24 +51,24 @@ import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
 import com.journeyapps.barcodescanner.BarcodeEncoder;
 
-import org.json.JSONObject;
-
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
-import java.util.Scanner;
+import java.util.Map;
 
 public class PaymentActivity extends AppCompatActivity {
 
+    public static final String EXTRA_AMOUNT          = "extra_amount";
+    public static final String EXTRA_CART_ITEMS      = "extra_cart_items";
+    public static final String EXTRA_IVA_PERCENT     = "extra_iva_percent";
+    public static final String EXTRA_ISR_PERCENT     = "extra_isr_percent";
+    public static final String EXTRA_DISCOUNT_TYPE   = "extra_discount_type";
+    public static final String EXTRA_DISCOUNT_VALUE  = "extra_discount_value";
+    public static final String EXTRA_CASH_AMOUNT     = "extra_cash_amount";
+
     private static final int QR_SIZE = 600;
     private static final long POLL_INTERVAL_MS = 3_000L;
-    private static final String TAG = "BTCPay";
     private static final int REQ_BT_PRINT = 102;
-
-    private static final String BTCPAY_API_KEY  = BuildConfig.BTCPAY_API_KEY;
-    private static final String BTCPAY_STORE_ID = BuildConfig.BTCPAY_STORE_ID;
-    private static final String BTCPAY_URL      = BuildConfig.BTCPAY_URL;
 
     private ActivityPaymentBinding binding;
     private FirebaseFirestore db;
@@ -81,6 +86,16 @@ public class PaymentActivity extends AppCompatActivity {
     private double currentAmountBtc;
     private String currentDescription;
     private String merchantBusinessName;
+
+    private List<CartItem> cartItemsFromIntent = null;
+    private double ivaPercent = 0;
+    private double isrPercent = 0;
+    private String discountType = "";
+    private double discountValue = 0;
+    private double cashAmountUsd = 0;
+    private Bitmap merchantLogo = null;
+
+    private static final int RC_WRITE_STORAGE = 43;
 
     // ES: NFC HCE (emulación de tarjeta por host)
     // EN: NFC HCE (host card emulation)
@@ -107,7 +122,10 @@ public class PaymentActivity extends AppCompatActivity {
         binding.btnGenerateQr.setOnClickListener(v -> handleGenerateQr());
         binding.btnNewPayment.setOnClickListener(v -> resetToForm());
         binding.btnPrintReceipt.setOnClickListener(v -> requestPrintWithPermission());
+        binding.btnShareReceipt.setOnClickListener(v -> shareReceipt());
+        binding.btnSaveReceipt.setOnClickListener(v -> saveReceipt());
         loadMerchantName();
+        loadLogoFromFirestore();
 
         nfcAdapter  = NfcAdapter.getDefaultAdapter(this);
         nfcAvailable = nfcAdapter != null;
@@ -117,6 +135,42 @@ public class PaymentActivity extends AppCompatActivity {
             @Override public void afterTextChanged(Editable s) { updateBtcEquivalent(); }
         });
         setupBottomNav();
+        handleCartExtras();
+    }
+
+    @SuppressWarnings("unchecked")
+    private void handleCartExtras() {
+        Intent intent = getIntent();
+        if (!intent.hasExtra(EXTRA_AMOUNT)) return;
+        double amount = intent.getDoubleExtra(EXTRA_AMOUNT, 0);
+        cartItemsFromIntent = (List<CartItem>) intent.getSerializableExtra(EXTRA_CART_ITEMS);
+        ivaPercent = intent.getDoubleExtra(EXTRA_IVA_PERCENT, 0);
+        isrPercent = intent.getDoubleExtra(EXTRA_ISR_PERCENT, 0);
+        discountType = intent.getStringExtra(EXTRA_DISCOUNT_TYPE);
+        if (discountType == null) discountType = "";
+        discountValue = intent.getDoubleExtra(EXTRA_DISCOUNT_VALUE, 0);
+        cashAmountUsd = intent.getDoubleExtra(EXTRA_CASH_AMOUNT, 0);
+
+        binding.etAmount.setText(String.format(Locale.US, "%.2f", amount));
+        if (cartItemsFromIntent != null && !cartItemsFromIntent.isEmpty()) {
+            binding.etDescription.setText(buildCartDescription(cartItemsFromIntent));
+        }
+        if (cashAmountUsd > 0) {
+            binding.tvMixedInfo.setText(getString(R.string.label_mixed_payment_info, cashAmountUsd, amount));
+            binding.tvMixedInfo.setVisibility(View.VISIBLE);
+        }
+        binding.getRoot().post(this::handleGenerateQr);
+    }
+
+    private static String buildCartDescription(List<CartItem> items) {
+        if (items.size() == 1) return items.get(0).getNombre();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < Math.min(items.size(), 3); i++) {
+            if (i > 0) sb.append(", ");
+            sb.append(items.get(i).getNombre());
+        }
+        if (items.size() > 3) sb.append(" +").append(items.size() - 3).append(" más");
+        return sb.toString();
     }
 
     private void updateBtcEquivalent() {
@@ -138,8 +192,14 @@ public class PaymentActivity extends AppCompatActivity {
     private void setupBottomNav() {
         binding.bottomNav.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
-            if (id == R.id.nav_merchant_history) {
+            if (id == R.id.nav_cobros) {
+                startActivity(new Intent(this, CatalogoActivity.class)
+                        .setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));
+            } else if (id == R.id.nav_merchant_history) {
                 startActivity(new Intent(this, MerchantHistorialActivity.class)
+                        .setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));
+            } else if (id == R.id.nav_dashboard) {
+                startActivity(new Intent(this, DashboardActivity.class)
                         .setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));
             } else if (id == R.id.nav_merchant_settings) {
                 startActivity(new Intent(this, MerchantAjustesActivity.class)
@@ -147,13 +207,11 @@ public class PaymentActivity extends AppCompatActivity {
             }
             return true;
         });
-        binding.bottomNav.setSelectedItemId(R.id.nav_cobros);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        binding.bottomNav.setSelectedItemId(R.id.nav_cobros);
         PriceService.get().addListener(priceListener);
         if (currentInvoiceId != null && !pollingStopped) {
             handler.postDelayed(pollRunnable, POLL_INTERVAL_MS);
@@ -200,90 +258,30 @@ public class PaymentActivity extends AppCompatActivity {
     // ── BTCPay API / BTCPay API ───────────────────────────────────────────────
 
     private void createBtcPayInvoice(double amount, String description) {
-        new Thread(() -> {
-            HttpURLConnection conn = null;
-            try {
-                String endpoint = BTCPAY_URL + "/api/v1/stores/" + BTCPAY_STORE_ID + "/invoices";
-                Log.d(TAG, "POST " + endpoint);
-
-                URL url = new URL(endpoint);
-                conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("POST");
-                conn.setRequestProperty("Authorization", "token " + BTCPAY_API_KEY);
-                conn.setRequestProperty("Content-Type", "application/json");
-                conn.setConnectTimeout(15_000);
-                conn.setReadTimeout(15_000);
-                conn.setDoOutput(true);
-
-                String safeDesc = description.isEmpty() ? "Pago CyberPOS" : description;
-                String body = new JSONObject()
-                        .put("amount", String.format(Locale.US, "%.2f", amount))
-                        .put("currency", "USD")
-                        .put("metadata", new JSONObject().put("itemDesc", safeDesc))
-                        .toString();
-                conn.getOutputStream().write(body.getBytes("UTF-8"));
-
-                int code = conn.getResponseCode();
-                Log.d(TAG, "Response code: " + code);
-
-                if (code == 200 || code == 201) {
-                    JSONObject json = new JSONObject(readStream(conn.getInputStream()));
-                    String invoiceId   = json.getString("id");
-                    String checkoutUrl = json.optString("checkoutLink", "");
-                    Log.d(TAG, "Invoice created: id=" + invoiceId + " checkoutLink=" + checkoutUrl);
-
-                    handler.post(() -> {
-                        if (isFinishing() || isDestroyed()) return;
-                        if (!checkoutUrl.isEmpty()) {
-                            currentInvoiceId = invoiceId;
-                            pollingStopped = false;
-                            showQrAndStartPolling(checkoutUrl, amount, description, invoiceId);
-                        } else {
-                            setLoading(false);
-                            Toast.makeText(this, R.string.error_btcpay_invoice, Toast.LENGTH_SHORT).show();
-                        }
-                    });
+        BtcPayClient.createInvoice(amount, description, new BtcPayClient.Callback<BtcPayClient.Invoice>() {
+            @Override
+            public void onSuccess(BtcPayClient.Invoice invoice) {
+                if (isFinishing() || isDestroyed()) return;
+                if (!invoice.checkoutLink.isEmpty()) {
+                    currentInvoiceId = invoice.id;
+                    pollingStopped = false;
+                    showQrAndStartPolling(invoice.checkoutLink, amount, description, invoice.id);
                 } else {
-                    InputStream errStream = conn.getErrorStream();
-                    String errBody = errStream != null ? readStream(errStream) : "(empty)";
-                    Log.e(TAG, "Error " + code + ": " + errBody);
-
-                    String userMsg = extractErrorMessage(errBody, code);
-                    handler.post(() -> {
-                        if (!isFinishing() && !isDestroyed()) {
-                            setLoading(false);
-                            Toast.makeText(this, userMsg, Toast.LENGTH_LONG).show();
-                        }
-                    });
+                    setLoading(false);
+                    Toast.makeText(PaymentActivity.this, R.string.error_btcpay_invoice,
+                            Toast.LENGTH_SHORT).show();
                 }
-            } catch (Exception e) {
-                Log.e(TAG, "Request failed: " + e.getMessage(), e);
-                String userMsg = e.getMessage() != null ? e.getMessage()
-                        : getString(R.string.error_btcpay_invoice);
-                handler.post(() -> {
-                    if (!isFinishing() && !isDestroyed()) {
-                        setLoading(false);
-                        Toast.makeText(this, userMsg, Toast.LENGTH_LONG).show();
-                    }
-                });
-            } finally {
-                if (conn != null) conn.disconnect();
             }
-        }).start();
-    }
 
-    /**
-     * ES: Extrae el mensaje legible del cuerpo de error JSON de BTCPay; usa el código HTTP como respaldo.
-     * EN: Pulls the human-readable message out of a BTCPay JSON error body, falling back to HTTP code.
-     */
-    private static String extractErrorMessage(String body, int httpCode) {
-        try {
-            JSONObject json = new JSONObject(body);
-            // ES: BTCPay usa "message" en el nivel superior, a veces anidado bajo "errors"
-            // EN: BTCPay uses "message" at the top level, sometimes nested under "errors"
-            if (json.has("message")) return json.getString("message");
-        } catch (Exception ignored) {}
-        return "HTTP " + httpCode + ": " + body;
+            @Override
+            public void onError(BtcPayClient.BtcPayException e) {
+                if (isFinishing() || isDestroyed()) return;
+                setLoading(false);
+                Toast.makeText(PaymentActivity.this,
+                        e.userMessage(getString(R.string.error_btcpay_invoice)),
+                        Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     // ── Generación de QR y sondeo / QR generation & polling ──────────────────
@@ -292,7 +290,7 @@ public class PaymentActivity extends AppCompatActivity {
                                        String description, String invoiceId) {
         // ES: Capturar datos del pago para el recibo
         // EN: Capture payment data for receipt
-        currentAmountUsd  = amount;
+        currentAmountUsd  = amount + cashAmountUsd;
         currentAmountBtc  = btcUsdRate > 0 ? amount / btcUsdRate : 0;
         currentDescription = description;
 
@@ -322,40 +320,24 @@ public class PaymentActivity extends AppCompatActivity {
 
     private void doPollOnThread() {
         if (pollingStopped || currentInvoiceId == null) return;
-        new Thread(() -> {
-            HttpURLConnection conn = null;
-            try {
-                URL url = new URL(BTCPAY_URL + "/api/v1/stores/" + BTCPAY_STORE_ID
-                        + "/invoices/" + currentInvoiceId);
-                conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestProperty("Authorization", "token " + BTCPAY_API_KEY);
-                conn.setConnectTimeout(10_000);
-                conn.setReadTimeout(10_000);
-
-                String status = "";
-                if (conn.getResponseCode() == 200) {
-                    JSONObject json = new JSONObject(readStream(conn.getInputStream()));
-                    status = json.optString("status", "");
+        BtcPayClient.getInvoice(currentInvoiceId, new BtcPayClient.Callback<BtcPayClient.Invoice>() {
+            @Override
+            public void onSuccess(BtcPayClient.Invoice invoice) {
+                if (isFinishing() || isDestroyed()) return;
+                if ("Settled".equals(invoice.status)) {
+                    onPaymentSettled();
+                } else if (!pollingStopped) {
+                    handler.postDelayed(pollRunnable, POLL_INTERVAL_MS);
                 }
-                final String finalStatus = status;
-                handler.post(() -> {
-                    if (isFinishing() || isDestroyed()) return;
-                    if ("Settled".equals(finalStatus)) {
-                        onPaymentSettled();
-                    } else if (!pollingStopped) {
-                        handler.postDelayed(pollRunnable, POLL_INTERVAL_MS);
-                    }
-                });
-            } catch (Exception e) {
-                handler.post(() -> {
-                    if (!pollingStopped && !isFinishing() && !isDestroyed()) {
-                        handler.postDelayed(pollRunnable, POLL_INTERVAL_MS);
-                    }
-                });
-            } finally {
-                if (conn != null) conn.disconnect();
             }
-        }).start();
+
+            @Override
+            public void onError(BtcPayClient.BtcPayException e) {
+                if (!pollingStopped && !isFinishing() && !isDestroyed()) {
+                    handler.postDelayed(pollRunnable, POLL_INTERVAL_MS);
+                }
+            }
+        });
     }
 
     // ── Pago confirmado / Payment settled ────────────────────────────────────
@@ -373,9 +355,37 @@ public class PaymentActivity extends AppCompatActivity {
             db.collection("payments").document(firestoreDocId)
                     .update("status", "settled");
         }
+        descontarStock();
 
         binding.scrollViewForm.setVisibility(View.GONE);
         binding.layoutPaymentSuccess.setVisibility(View.VISIBLE);
+    }
+
+    // ── Descuento de stock (F9) / Stock deduction (F9) ───────────────────────
+
+    private void descontarStock() {
+        if (cartItemsFromIntent == null || cartItemsFromIntent.isEmpty()
+                || auth.getCurrentUser() == null) {
+            return;
+        }
+        String uid = auth.getCurrentUser().getUid();
+        for (CartItem item : cartItemsFromIntent) {
+            String productoId = item.getProductoId();
+            int cantidad = item.getCantidad();
+            if (productoId == null || productoId.isEmpty() || cantidad <= 0) continue;
+
+            com.google.firebase.firestore.DocumentReference ref = db.collection("users")
+                    .document(uid).collection("productos").document(productoId);
+            db.runTransaction(transaction -> {
+                com.google.firebase.firestore.DocumentSnapshot snap = transaction.get(ref);
+                Long stock = snap.getLong("stock");
+                if (stock != null && stock >= 0) {
+                    long nuevoStock = Math.max(0, stock - cantidad);
+                    transaction.update(ref, "stock", nuevoStock);
+                }
+                return null;
+            });
+        }
     }
 
     private void resetToForm() {
@@ -404,7 +414,27 @@ public class PaymentActivity extends AppCompatActivity {
                                         String bolt11, String invoiceId) {
         String uid = auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : "unknown";
         double amountBtc = btcUsdRate > 0 ? amount / btcUsdRate : 0;
-        Payment payment = new Payment(uid, amount, amountBtc, "", description, bolt11, invoiceId);
+        // ES: "amount" es solo la porción facturada en Bitcoin (F10); el total de la venta
+        //     incluye además el efectivo recibido.
+        // EN: "amount" is only the BTC-invoiced portion (F10); the sale total also includes
+        //     the cash received.
+        double totalUsd = amount + cashAmountUsd;
+        Payment payment = new Payment(uid, totalUsd, amountBtc, "", description, bolt11, invoiceId);
+        payment.setMerchantName(merchantBusinessName);
+        payment.setIvaPercent(ivaPercent);
+        payment.setIsrPercent(isrPercent);
+        payment.setDiscountType(discountType);
+        payment.setDiscountValue(discountValue);
+        payment.setCashAmountUsd(cashAmountUsd);
+        payment.setPaymentType(cashAmountUsd > 0 ? "mixto" : "bitcoin");
+        payment.setDiscountUsd(CartTotals.compute(
+                cartItemsFromIntent, discountType, discountValue, ivaPercent, isrPercent).descuento);
+
+        if (cartItemsFromIntent != null && !cartItemsFromIntent.isEmpty()) {
+            List<Map<String, Object>> cartItemsMap = new ArrayList<>();
+            for (CartItem item : cartItemsFromIntent) cartItemsMap.add(item.toMap());
+            payment.setCartItems(cartItemsMap);
+        }
 
         db.collection("payments")
                 .add(payment)
@@ -425,6 +455,120 @@ public class PaymentActivity extends AppCompatActivity {
                         if (name != null && !name.isEmpty()) merchantBusinessName = name;
                     }
                 });
+    }
+
+    // ── Guardar recibo / Save receipt ────────────────────────────────────────
+
+    private void saveReceipt() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
+                ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                        != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, RC_WRITE_STORAGE);
+            return;
+        }
+        doGenerateAndSave();
+    }
+
+    private void doGenerateAndSave() {
+        binding.btnSaveReceipt.setEnabled(false);
+        Toast.makeText(this, R.string.msg_generating_receipt, Toast.LENGTH_SHORT).show();
+
+        final String biz    = merchantBusinessName;
+        final String invId  = currentInvoiceId;
+        final double usd    = currentAmountUsd;
+        final double btc    = currentAmountBtc;
+        final List<CartItem> items = cartItemsFromIntent;
+        final double iva    = ivaPercent;
+        final double isr    = isrPercent;
+        final String discT  = discountType;
+        final double discV   = discountValue;
+        final double cashV   = cashAmountUsd;
+        final Bitmap logo   = merchantLogo;
+
+        new Thread(() -> {
+            try {
+                java.io.File pdf = ReceiptGenerator.generate(
+                        this, biz, invId, usd, btc, items, iva, isr, discT, discV, cashV, logo);
+                ReceiptGenerator.saveToDownloads(this, pdf);
+                runOnUiThread(() -> {
+                    binding.btnSaveReceipt.setEnabled(true);
+                    Toast.makeText(this, R.string.msg_receipt_saved, Toast.LENGTH_LONG).show();
+                });
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    binding.btnSaveReceipt.setEnabled(true);
+                    Toast.makeText(this, R.string.error_receipt_generation, Toast.LENGTH_LONG).show();
+                });
+            }
+        }).start();
+    }
+
+    // ── Logo del comerciante / Merchant logo ──────────────────────────────────
+
+    private void loadLogoFromFirestore() {
+        if (auth.getCurrentUser() == null) return;
+        db.collection("users").document(auth.getCurrentUser().getUid())
+                .collection("configuracion").document("pantalla_cobro")
+                .get()
+                .addOnSuccessListener(doc -> {
+                    if (!doc.exists()) return;
+                    String b64 = doc.getString("logo");
+                    if (b64 == null) b64 = doc.getString("logo_base64");
+                    if (b64 == null || b64.isEmpty()) return;
+                    final String finalB64 = b64;
+                    new Thread(() -> {
+                        try {
+                            byte[] bytes = Base64.decode(finalB64, Base64.DEFAULT);
+                            Bitmap bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                            if (bmp != null) {
+                                merchantLogo = Bitmap.createScaledBitmap(bmp, 64, 64, true);
+                            }
+                        } catch (Exception ignored) {}
+                    }).start();
+                });
+    }
+
+    // ── Recibo digital / Digital receipt ─────────────────────────────────────
+
+    private void shareReceipt() {
+        binding.btnShareReceipt.setEnabled(false);
+        Toast.makeText(this, R.string.msg_generating_receipt, Toast.LENGTH_SHORT).show();
+
+        final String biz     = merchantBusinessName;
+        final String invId   = currentInvoiceId;
+        final double usd     = currentAmountUsd;
+        final double btc     = currentAmountBtc;
+        final List<CartItem> items = cartItemsFromIntent;
+        final double iva     = ivaPercent;
+        final double isr     = isrPercent;
+        final String discT   = discountType;
+        final double discV   = discountValue;
+        final double cashV   = cashAmountUsd;
+        final Bitmap logo    = merchantLogo;
+
+        new Thread(() -> {
+            try {
+                java.io.File pdf = ReceiptGenerator.generate(
+                        this, biz, invId, usd, btc, items, iva, isr, discT, discV, cashV, logo);
+                runOnUiThread(() -> {
+                    binding.btnShareReceipt.setEnabled(true);
+                    Uri uri = FileProvider.getUriForFile(
+                            this, "com.cyberpos.app.fileprovider", pdf);
+                    Intent share = new Intent(Intent.ACTION_SEND);
+                    share.setType("application/pdf");
+                    share.putExtra(Intent.EXTRA_STREAM, uri);
+                    share.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivity(Intent.createChooser(
+                            share, getString(R.string.msg_share_receipt)));
+                });
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    binding.btnShareReceipt.setEnabled(true);
+                    Toast.makeText(this, R.string.error_receipt_generation, Toast.LENGTH_LONG).show();
+                });
+            }
+        }).start();
     }
 
     // ── Impresión Bluetooth / Bluetooth printing ──────────────────────────────
@@ -448,6 +592,12 @@ public class PaymentActivity extends AppCompatActivity {
         if (code == REQ_BT_PRINT && results.length > 0
                 && results[0] == PackageManager.PERMISSION_GRANTED) {
             doPrint();
+        } else if (code == RC_WRITE_STORAGE) {
+            if (results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED) {
+                doGenerateAndSave();
+            } else {
+                Toast.makeText(this, R.string.error_receipt_generation, Toast.LENGTH_SHORT).show();
+            }
         }
     }
 
@@ -463,6 +613,7 @@ public class PaymentActivity extends AppCompatActivity {
                 currentDescription,
                 currentAmountUsd,
                 currentAmountBtc,
+                cashAmountUsd,
                 new PrinterManager.PrintCallback() {
                     @Override public void onSuccess() {
                         Toast.makeText(PaymentActivity.this,
@@ -486,12 +637,5 @@ public class PaymentActivity extends AppCompatActivity {
     private void setLoading(boolean loading) {
         binding.btnGenerateQr.setEnabled(!loading);
         binding.progressBar.setVisibility(loading ? View.VISIBLE : View.GONE);
-    }
-
-    private static String readStream(InputStream is) {
-        Scanner sc = new Scanner(is, "UTF-8").useDelimiter("\\A");
-        String result = sc.hasNext() ? sc.next() : "";
-        sc.close();
-        return result;
     }
 }

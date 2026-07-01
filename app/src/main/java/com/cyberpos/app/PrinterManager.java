@@ -80,13 +80,24 @@ public final class PrinterManager {
                                      double amountUsd,
                                      double amountBtc,
                                      PrintCallback callback) {
+        printReceipt(ctx, businessName, description, amountUsd, amountBtc, 0, callback);
+    }
+
+    /** ES: Igual que {@link #printReceipt} pero admite el desglose de cobro mixto (F10). */
+    public static void printReceipt(Context ctx,
+                                     String businessName,
+                                     String description,
+                                     double amountUsd,
+                                     double amountBtc,
+                                     double cashAmountUsd,
+                                     PrintCallback callback) {
         String mac = getSavedPrinterMac(ctx);
         if (mac == null) {
             callback.onError("no_printer");
             return;
         }
 
-        String text = buildReceipt(businessName, description, amountUsd, amountBtc);
+        String text = buildReceipt(businessName, description, amountUsd, amountBtc, cashAmountUsd);
         Handler main = new Handler(Looper.getMainLooper());
 
         new Thread(() -> {
@@ -111,13 +122,30 @@ public final class PrinterManager {
     // ── Diseño del recibo / Receipt layout ───────────────────────────────────
 
     private static String buildReceipt(String businessName, String description,
-                                        double amountUsd, double amountBtc) {
+                                        double amountUsd, double amountBtc, double cashAmountUsd) {
         String biz  = (businessName != null && !businessName.isEmpty())
                 ? businessName : "Mi Negocio";
         String desc = (description  != null && !description.isEmpty())
                 ? description : "Pago Bitcoin";
         String now  = new SimpleDateFormat("dd/MM/yyyy  HH:mm", Locale.getDefault())
                 .format(new Date());
+
+        // ES: Cobro mixto (F10): efectivo + resto en Bitcoin (con sats)
+        // EN: Mixed payment (F10): cash + BTC remainder (with sats)
+        boolean mixto = cashAmountUsd > 0;
+        String metodoLine;
+        String montoLine;
+        if (mixto) {
+            double btcPortionUsd = amountUsd - cashAmountUsd;
+            long sats = Math.round(amountBtc * 100_000_000);
+            metodoLine = "[L]Metodo:   Mixto (Efectivo + Bitcoin)\n";
+            montoLine  = "[L]Efectivo: $" + String.format(Locale.US, "%.2f", cashAmountUsd) + "\n"
+                       + "[L]Bitcoin:  $" + String.format(Locale.US, "%.2f", btcPortionUsd)
+                       + " (" + String.format(Locale.US, "%,d", sats) + " sats)\n";
+        } else {
+            metodoLine = "[L]Metodo:   Bitcoin Lightning\n";
+            montoLine  = "[C]" + String.format(Locale.US, "%.8f", amountBtc) + " BTC\n";
+        }
 
         return "[C]<font size='big'><b>CyberPOS</b></font>\n"
              + "[C]<b>" + biz + "</b>\n"
@@ -130,10 +158,10 @@ public final class PrinterManager {
              + "[L]Fecha:  " + now + "\n"
              + "[L]\n"
              + "[C]<font size='big'><b>$" + String.format(Locale.US, "%.2f", amountUsd) + " USD</b></font>\n"
-             + "[C]" + String.format(Locale.US, "%.8f", amountBtc) + " BTC\n"
+             + montoLine
              + "[L]\n"
              + "[L]Concepto: " + desc + "\n"
-             + "[L]Metodo:   Bitcoin Lightning\n"
+             + metodoLine
              + "[L]Estado:   <b>CONFIRMADO</b>\n"
              + "[L]\n"
              + "[C]================================\n"

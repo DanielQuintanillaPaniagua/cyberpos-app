@@ -182,7 +182,6 @@ Abrí el proyecto en Android Studio, sincronizá con Gradle y correlo en un emul
 ---
 
 ## Arquitectura
-
 cyberpos-app/
 ├── app/src/main/java/com/cyberpos/app/
 │   ├── activities/
@@ -274,4 +273,3 @@ Licencia completa: [LICENSE](LICENSE) — GPL v3
 [GitHub](https://github.com/DanielQuintanillaPaniagua/cyberpos-app) · [Issues](https://github.com/DanielQuintanillaPaniagua/cyberpos-app/issues) · [GPL v3](https://www.gnu.org/licenses/gpl-3.0)
 
 </div>
-

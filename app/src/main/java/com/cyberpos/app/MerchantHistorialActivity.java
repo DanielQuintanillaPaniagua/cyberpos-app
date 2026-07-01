@@ -184,7 +184,8 @@ public class MerchantHistorialActivity extends AppCompatActivity {
                     timeFmt.format(ts),
                     payment.getAmountBtc(),
                     payment.getAmountUsd(),
-                    payment.getStatus())));
+                    payment.getStatus(),
+                    payment.getPaymentType())));
         }
     }
 
@@ -192,7 +193,10 @@ public class MerchantHistorialActivity extends AppCompatActivity {
         binding.bottomNav.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
             if (id == R.id.nav_cobros) {
-                startActivity(new Intent(this, PaymentActivity.class)
+                startActivity(new Intent(this, CatalogoActivity.class)
+                        .setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));
+            } else if (id == R.id.nav_dashboard) {
+                startActivity(new Intent(this, DashboardActivity.class)
                         .setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));
             } else if (id == R.id.nav_merchant_settings) {
                 startActivity(new Intent(this, MerchantAjustesActivity.class)
@@ -211,14 +215,16 @@ public class MerchantHistorialActivity extends AppCompatActivity {
         final double btcAmount;
         final double usdAmount;
         final String status;
+        final String paymentType;
 
         MerchantTx(String customerName, String time,
-                   double btcAmount, double usdAmount, String status) {
+                   double btcAmount, double usdAmount, String status, String paymentType) {
             this.customerName = customerName;
             this.time = time;
             this.btcAmount = btcAmount;
             this.usdAmount = usdAmount;
             this.status = status;
+            this.paymentType = paymentType;
         }
     }
 
@@ -274,11 +280,13 @@ public class MerchantHistorialActivity extends AppCompatActivity {
                 vh.tvTime.setText(tx.time);
                 vh.tvBtcAmount.setText(String.format(Locale.US, "+%.8f BTC", tx.btcAmount));
                 vh.tvUsdAmount.setText(String.format(Locale.US, "≈ $%.2f USD", tx.usdAmount));
+                String tag = "mixto".equals(tx.paymentType)
+                        ? holder.itemView.getContext().getString(R.string.label_payment_type_mixed) : "";
                 if ("settled".equals(tx.status)) {
-                    vh.tvStatus.setText("✓ COMPLETADO");
+                    vh.tvStatus.setText("✓ COMPLETADO" + tag);
                     vh.tvStatus.setTextColor(Color.parseColor("#00FF88"));
                 } else {
-                    vh.tvStatus.setText("⏳ PENDIENTE");
+                    vh.tvStatus.setText("⏳ PENDIENTE" + tag);
                     vh.tvStatus.setTextColor(Color.parseColor("#FFC107"));
                 }
             }

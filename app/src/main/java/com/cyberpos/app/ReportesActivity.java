@@ -424,10 +424,13 @@ public class ReportesActivity extends AppCompatActivity {
         binding.bottomNav.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
             if (id == R.id.nav_cobros) {
-                startActivity(new Intent(this, PaymentActivity.class)
+                startActivity(new Intent(this, CatalogoActivity.class)
                         .setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));
             } else if (id == R.id.nav_merchant_history) {
                 startActivity(new Intent(this, MerchantHistorialActivity.class)
+                        .setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));
+            } else if (id == R.id.nav_dashboard) {
+                startActivity(new Intent(this, DashboardActivity.class)
                         .setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));
             }
             return true;

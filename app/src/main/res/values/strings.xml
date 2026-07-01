@@ -14,6 +14,7 @@
     <string name="login_failed">Error al iniciar sesión: %1$s</string>
     <string name="login_failed_generic">Correo o contraseña incorrectos</string>
     <string name="error_email_required">Ingresa tu correo</string>
+    <string name="error_email_invalid">Correo electrónico inválido</string>
     <string name="error_password_length">La contraseña debe tener al menos 6 caracteres</string>
     <string name="link_create_account">¿No tienes cuenta? Crear cuenta</string>
 
@@ -60,6 +61,7 @@
     <string name="value_time">~3 segundos</string>
     <string name="value_network">⚡ Lightning</string>
     <string name="btn_pay_now">⚡ PAGAR AHORA</string>
+    <string name="btn_open_wallet_pay">🔓 Abrir Wallet</string>
     <string name="nav_pay">Pagar</string>
     <string name="nav_history">Historial</string>
     <string name="nav_settings">Ajustes</string>
@@ -94,7 +96,7 @@
     <string name="settings_notifications">Notificaciones</string>
     <string name="settings_language">Idioma</string>
     <string name="settings_version">Versión</string>
-    <string name="value_version">1.0.0</string>
+    <string name="value_version">Mark II</string>
     <string name="value_currency">BTC / USD</string>
     <string name="value_language">Español</string>
 
@@ -120,6 +122,7 @@
 
     <!-- Merchant bottom nav -->
     <string name="nav_cobros">Cobros</string>
+    <string name="nav_dashboard">Analítica</string>
 
     <!-- PaymentActivity screen header -->
     <string name="title_cobros">COBROS</string>
@@ -190,6 +193,67 @@
     <string name="msg_saved_to_downloads">✓ Guardado en Descargas/CyberPOS</string>
     <string name="action_share">COMPARTIR</string>
 
+    <!-- CatalogoActivity -->
+    <string name="title_catalogo">COBROS</string>
+    <string name="subtitle_catalogo">Selecciona productos</string>
+    <string name="label_cart">CARRITO</string>
+    <string name="label_cart_empty">Toca un producto para agregarlo</string>
+    <string name="label_total">TOTAL</string>
+    <string name="btn_cobrar">⚡ Cobrar</string>
+    <string name="btn_cantidad_manual">Cantidad manual</string>
+    <string name="label_no_products_catalog">Sin productos configurados.\nVe a Ajustes → Catálogo de productos.</string>
+    <string name="error_load_products">Error al cargar productos</string>
+
+    <!-- GestionProductosActivity -->
+    <string name="title_gestion_productos">PRODUCTOS</string>
+    <string name="subtitle_gestion_productos">Gestiona tu catálogo</string>
+    <string name="label_no_products">Sin productos. Toca + para agregar.</string>
+    <string name="btn_add_product">Agregar producto</string>
+    <string name="title_add_product">Agregar producto</string>
+    <string name="title_edit_product">Editar producto</string>
+    <string name="hint_product_name">Nombre del producto</string>
+    <string name="hint_product_price">Precio (USD)</string>
+    <string name="hint_product_category">Categoría</string>
+    <string name="label_image_optional">Imagen (opcional)</string>
+    <string name="btn_pick_image">Añadir imagen</string>
+    <string name="btn_save_product">Guardar</string>
+    <string name="btn_cancel">Cancelar</string>
+    <string name="btn_delete">Eliminar</string>
+    <string name="msg_product_saved">Producto guardado</string>
+    <string name="msg_product_deleted">Producto eliminado</string>
+    <string name="msg_confirm_delete_product">¿Eliminar este producto del catálogo?</string>
+    <string name="error_product_name_required">Ingresa el nombre del producto</string>
+    <string name="error_product_price_invalid">Ingresa un precio válido mayor a 0</string>
+    <string name="error_save_product">Error al guardar producto</string>
+
+    <!-- DashboardActivity -->
+    <string name="title_dashboard">ANALÍTICA</string>
+    <string name="subtitle_dashboard">Resumen de ventas</string>
+    <string name="filter_this_week">ESTA SEMANA</string>
+    <string name="filter_this_month">ESTE MES</string>
+    <string name="label_total_sales_usd">TOTAL VENTAS (USD)</string>
+    <string name="label_total_sales_btc">TOTAL VENTAS (BTC)</string>
+    <string name="label_num_transactions">TRANSACCIONES</string>
+    <string name="label_top_product">PRODUCTO ESTRELLA</string>
+    <string name="label_peak_hour">HORA PICO</string>
+    <string name="label_chart_income">INGRESOS (USD)</string>
+    <string name="label_no_data">Sin datos para este período</string>
+
+    <!-- DashboardActivity — días del gráfico semanal -->
+    <string-array name="week_days_short">
+        <item>Dom</item>
+        <item>Lun</item>
+        <item>Mar</item>
+        <item>Mié</item>
+        <item>Jue</item>
+        <item>Vie</item>
+        <item>Sáb</item>
+    </string-array>
+
+    <!-- MerchantAjustesActivity — new rows -->
+    <string name="settings_dashboard">Analítica</string>
+    <string name="settings_productos">Catálogo de productos</string>
+
     <!-- MerchantAjustesActivity -->
     <string name="label_role_merchant">Comerciante</string>
     <string name="settings_reports">Reportes</string>
@@ -242,4 +306,118 @@
     <string name="error_no_btc_address">No se encontró dirección BTC on-chain en la factura</string>
     <string name="error_payment_methods_fetch">Error al obtener métodos de pago (HTTP %1$d)</string>
     <string name="msg_address_copied">Dirección copiada. Ejecuta:\nbitcoin-cli generatetoaddress 1 %1$s</string>
+
+    <!-- TwoFactorActivity -->
+    <string name="title_two_factor">VERIFICACIÓN 2FA</string>
+    <string name="subtitle_two_factor_email">Revisa tu correo %1$s\ny copia el código de 6 dígitos</string>
+    <string name="subtitle_two_factor_sms">Revisa tus mensajes SMS\ny copia el código de 6 dígitos</string>
+    <string name="hint_verification_code">000000</string>
+    <string name="btn_verify_code">Verificar</string>
+    <string name="btn_resend_code">Reenviar código</string>
+    <string name="msg_send_2fa_code">Enviar código de verificación</string>
+    <string name="msg_code_sent_sms">Código enviado por SMS</string>
+    <string name="error_code_required">Ingresa el código de verificación</string>
+    <string name="error_invalid_code">Código incorrecto. Verifica e intenta de nuevo.</string>
+    <string name="error_code_expired">El código expiró. Toca Reenviar para obtener uno nuevo.</string>
+    <string name="error_code_used">Este código ya fue utilizado. Toca Reenviar para obtener uno nuevo.</string>
+    <string name="error_2fa_failed">Error al verificar el código. Intenta de nuevo.</string>
+    <string name="error_no_email_client">No se encontró una aplicación de correo en el dispositivo.</string>
+    <string name="msg_sms_2fa_code">Tu código CyberPOS: %1$s (válido 10 min)</string>
+
+    <!-- Recibo digital -->
+    <string name="btn_share_receipt">📄 Compartir recibo</string>
+    <string name="btn_save_receipt">💾 Guardar en Descargas</string>
+    <string name="msg_share_receipt">Compartir recibo de pago</string>
+    <string name="msg_generating_receipt">Generando recibo…</string>
+    <string name="msg_receipt_saved">Recibo guardado en Descargas</string>
+    <string name="error_receipt_generation">Error al generar el recibo</string>
+    <string name="menu_share_receipt">📄 Compartir</string>
+    <string name="menu_save_receipt">💾 Guardar en Descargas</string>
+    <string name="title_image_source">Foto del producto</string>
+    <string name="option_camera">Cámara</string>
+    <string name="option_gallery">Galería</string>
+    <string name="error_camera_permission">Permiso de cámara denegado</string>
+    <!-- F8 Descuentos -->
+    <string name="hint_discount_type">Descuento</string>
+    <string name="hint_discount_value">Valor</string>
+    <string name="discount_none">Sin descuento</string>
+    <string name="discount_percent">Porcentaje (%)</string>
+    <string name="discount_fixed">Monto fijo ($)</string>
+    <string name="error_discount_value">Valor de descuento inválido</string>
+    <string name="error_discount_percent">El porcentaje no puede superar 100</string>
+    <string name="error_discount_fixed">El descuento no puede superar el precio</string>
+    <string name="btn_apply_discount">🏷️ Descuento</string>
+    <string name="btn_remove_discount">Quitar descuento</string>
+    <string name="label_subtotal">Subtotal</string>
+    <string name="label_discount">Descuento</string>
+    <string name="hint_discount_scope">Alcance del descuento</string>
+    <string name="hint_discount_min_units">Mín. unidades</string>
+    <string name="scope_all">Todas las unidades</string>
+    <string name="scope_first">Solo la primera unidad</string>
+    <string name="scope_threshold">A partir de N unidades</string>
+    <string name="error_discount_min_units">Mínimo 2 unidades</string>
+
+    <!-- F9 Inventario -->
+    <string name="hint_product_stock">Stock (vacío = ilimitado)</string>
+    <string name="error_product_stock_invalid">Stock inválido</string>
+    <string name="label_stock_unlimited">Stock ilimitado</string>
+    <string name="label_stock_count">Stock: %1$d</string>
+    <string name="badge_out_of_stock">AGOTADO</string>
+    <string name="label_low_stock_alert">⚠ Stock bajo</string>
+    <string name="label_low_stock_item">%1$s: %2$d uds</string>
+
+    <!-- F10 Cobro mixto -->
+    <string name="btn_cobro_mixto">💵⚡ Mixto</string>
+    <string name="title_cobro_mixto">Cobro mixto</string>
+    <string name="msg_cobro_mixto_total">Total a cobrar: $%1$.2f USD</string>
+    <string name="hint_cash_amount">Efectivo recibido (USD)</string>
+    <string name="error_cash_amount_invalid">El efectivo debe ser mayor a $0 y menor al total</string>
+    <string name="btn_continue">Continuar</string>
+    <string name="label_mixed_payment_info">💵 Efectivo: $%1$.2f USD\n⚡ Resta en Bitcoin: $%2$.2f USD</string>
+    <string name="label_payment_type_mixed"> · MIXTO</string>
+
+    <!-- F11 Calificaciones del comerciante -->
+    <string name="title_rate_business">Calificar este negocio</string>
+    <string name="hint_rating_comment">Comentario (opcional)</string>
+    <string name="btn_submit_rating">Enviar calificación</string>
+    <string name="btn_rate_business">⭐ Calificar este negocio</string>
+    <string name="msg_rating_saved">¡Gracias por tu calificación!</string>
+    <string name="error_rating_save">No se pudo guardar la calificación</string>
+    <string name="menu_rate_business">⭐ Calificar</string>
+    <string name="label_ratings_title">⭐ Calificaciones</string>
+    <string name="label_rating_count">(%1$d calificaciones)</string>
+    <string name="label_no_rating_comments">Sin comentarios aún</string>
+    <string name="label_no_ratings">Aún no tienes calificaciones</string>
+
+    <!-- F12 Perfil del negocio visible para el cliente -->
+    <string name="btn_view_merchant_profile">🏪 Ver perfil del negocio</string>
+    <string name="btn_close">Cerrar</string>
+    <string name="section_description">Descripción</string>
+    <string name="section_schedule">Horario</string>
+    <string name="label_business_default_name">Negocio</string>
+    <string name="label_no_description">Sin descripción</string>
+    <string name="label_no_schedule">Horario no disponible</string>
+    <string name="label_business_no_ratings">Sin calificaciones aún</string>
+    <string name="hint_horario_negocio">Horario de atención (ej: Lun-Vie 9:00-18:00)</string>
+
+    <!-- F13 Puntos de lealtad -->
+    <string name="settings_loyalty_points">Puntos de lealtad</string>
+    <string name="title_puntos_lealtad">PUNTOS DE LEALTAD</string>
+    <string name="hint_puntos_por_dolar">Puntos otorgados por cada $1 USD</string>
+    <string name="hint_canje_cantidad">Puntos necesarios para canjear</string>
+    <string name="hint_canje_descuento">Descuento por ese canje (USD)</string>
+    <string name="btn_redeem_points">🎁 Puntos</string>
+    <string name="title_redeem_points">Canjear puntos</string>
+    <string name="hint_customer_email">Correo del cliente</string>
+    <string name="btn_search_customer">Buscar</string>
+    <string name="error_customer_not_found">No se encontró ningún cliente con ese correo</string>
+    <string name="error_loyalty_not_configured">Este negocio no tiene configurado un programa de puntos</string>
+    <string name="error_not_enough_points">El cliente no tiene suficientes puntos para canjear</string>
+    <string name="msg_points_redeemed">Descuento por puntos aplicado</string>
+    <string name="msg_confirm_redeem_points">El cliente tiene %1$d puntos.\n¿Canjear %2$d puntos por $%3$.2f de descuento?</string>
+    <string name="label_loyalty_points_history">🎁 %1$d pts con %2$s</string>
+
+    <!-- F14 Exportar analytics a PDF -->
+    <string name="btn_export_report">📄 Exportar reporte</string>
+    <string name="msg_share_analytics_report">Compartir reporte de analytics</string>
 </resources>

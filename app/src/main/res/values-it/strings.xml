@@ -12,6 +12,7 @@
     <string name="btn_login">Accedi</string>
     <string name="login_failed">Errore di accesso: %1$s</string>
     <string name="error_email_required">Inserisci la tua e-mail</string>
+    <string name="error_email_invalid">Indirizzo e-mail non valido</string>
     <string name="error_password_length">La password deve avere almeno 6 caratteri</string>
     <string name="link_create_account">Non hai un account? Crea account</string>
 
@@ -197,4 +198,130 @@
     <string name="error_no_btc_address">Nessun indirizzo BTC on-chain nella fattura</string>
     <string name="error_payment_methods_fetch">Errore nel recupero metodi (HTTP %1$d)</string>
     <string name="msg_address_copied">Indirizzo copiato. Esegui:\nbitcoin-cli generatetoaddress 1 %1$s</string>
+
+    <!-- Catalogo prodotti -->
+    <string name="title_catalogo">PAGAMENTI</string>
+    <string name="subtitle_catalogo">Seleziona prodotti</string>
+    <string name="label_cart">CARRELLO</string>
+    <string name="label_cart_empty">Tocca un prodotto per aggiungerlo</string>
+    <string name="label_total">TOTALE</string>
+    <string name="btn_cobrar">⚡ Incassa</string>
+    <string name="btn_cantidad_manual">Importo manuale</string>
+    <string name="label_no_products_catalog">Nessun prodotto configurato.\nVai in Impostazioni → Catalogo prodotti.</string>
+    <string name="error_load_products">Errore nel caricamento dei prodotti</string>
+    <string name="title_gestion_productos">PRODOTTI</string>
+    <string name="subtitle_gestion_productos">Gestisci il tuo catalogo</string>
+    <string name="label_no_products">Nessun prodotto. Tocca + per aggiungere.</string>
+    <string name="btn_add_product">Aggiungi prodotto</string>
+    <string name="title_add_product">Aggiungi prodotto</string>
+    <string name="title_edit_product">Modifica prodotto</string>
+    <string name="hint_product_name">Nome del prodotto</string>
+    <string name="hint_product_price">Prezzo (USD)</string>
+    <string name="hint_product_category">Categoria</string>
+    <string name="label_image_optional">Immagine (opzionale)</string>
+    <string name="btn_pick_image">Aggiungi immagine</string>
+    <string name="btn_save_product">Salva</string>
+    <string name="btn_cancel">Annulla</string>
+    <string name="btn_delete">Elimina</string>
+    <string name="msg_product_saved">Prodotto salvato</string>
+    <string name="msg_product_deleted">Prodotto eliminato</string>
+    <string name="msg_confirm_delete_product">Rimuovere questo prodotto dal catalogo?</string>
+    <string name="error_product_name_required">Inserisci il nome del prodotto</string>
+    <string name="error_product_price_invalid">Inserisci un prezzo valido maggiore di 0</string>
+    <string name="error_save_product">Errore nel salvataggio del prodotto</string>
+    <string name="settings_productos">Catalogo prodotti</string>
+
+    <!-- Dashboard analytics -->
+    <string name="title_dashboard">ANALYTICS</string>
+    <string name="subtitle_dashboard">Riepilogo vendite</string>
+    <string name="filter_this_week">QUESTA SETTIMANA</string>
+    <string name="filter_this_month">QUESTO MESE</string>
+    <string name="label_total_sales_usd">TOTALE VENDITE (USD)</string>
+    <string name="label_total_sales_btc">TOTALE VENDITE (BTC)</string>
+    <string name="label_num_transactions">TRANSAZIONI</string>
+    <string name="label_top_product">PRODOTTO TOP</string>
+    <string name="label_peak_hour">ORA DI PUNTA</string>
+    <string name="label_chart_income">ENTRATE (USD)</string>
+    <string name="label_no_data">Nessun dato per questo periodo</string>
+    <string name="settings_dashboard">Analytics</string>
+    <string name="nav_dashboard">Analytics</string>
+
+    <string-array name="week_days_short">
+        <item>Dom</item>
+        <item>Lun</item>
+        <item>Mar</item>
+        <item>Mer</item>
+        <item>Gio</item>
+        <item>Ven</item>
+        <item>Sab</item>
+    </string-array>
+    <string name="title_image_source">Foto del prodotto</string>
+    <string name="option_camera">Fotocamera</string>
+    <string name="option_gallery">Galleria</string>
+    <string name="error_camera_permission">Permesso fotocamera negato</string>
+    <!-- F8 Sconti -->
+    <string name="hint_discount_type">Sconto</string>
+    <string name="hint_discount_value">Valore</string>
+    <string name="discount_none">Nessuno sconto</string>
+    <string name="discount_percent">Percentuale (%)</string>
+    <string name="discount_fixed">Importo fisso ($)</string>
+    <string name="error_discount_value">Valore sconto non valido</string>
+    <string name="error_discount_percent">La percentuale non può superare 100</string>
+    <string name="error_discount_fixed">Lo sconto non può superare il prezzo</string>
+    <string name="btn_apply_discount">🏷️ Sconto</string>
+    <string name="btn_remove_discount">Rimuovi sconto</string>
+    <string name="label_subtotal">Subtotale</string>
+    <string name="label_discount">Sconto</string>
+    <string name="hint_discount_scope">Ambito dello sconto</string>
+    <string name="hint_discount_min_units">Min. unità</string>
+    <string name="scope_all">Tutte le unità</string>
+    <string name="scope_first">Solo la prima unità</string>
+    <string name="scope_threshold">A partire da N unità</string>
+    <string name="error_discount_min_units">Minimo 2 unità</string>
+
+    <!-- Auto-traducido por sync_strings.py -->
+    <string name="login_failed_generic">E-mail o password errati</string>
+    <string name="register_failed_generic">Impossibile creare l\'account. Controlla i dati e riprova.</string>
+    <string name="nfc_service_desc">CyberPOS NFC pago</string>
+    <string name="label_nfc_active">NFC ATTIVO — Avvicina il cellulare del cliente</string>
+    <string name="settings_printer">Stampante Bluetooth</string>
+    <string name="title_bluetooth_printer">STAMPANTE</string>
+    <string name="subtitle_bluetooth_printer">Ricevute tramite stampante termica</string>
+    <string name="label_current_printer">STAMPANTE ATTIVA</string>
+    <string name="label_no_printer_configured">Nessuna stampante configurata</string>
+    <string name="label_paired_devices">DISPOSITIVI COLLEGATI</string>
+    <string name="label_no_paired_devices">Nessun dispositivo Bluetooth è associato.\nVai a Impostazioni → Sistema Bluetooth per associare la stampante.</string>
+    <string name="msg_pair_hint">Associare prima la stampante da\nImpostazioni → Sistema Bluetooth</string>
+    <string name="msg_printer_saved">Stampante salvata: %1$s</string>
+    <string name="btn_print_receipt">Stampa ricevuta</string>
+    <string name="msg_printing">Stampa…</string>
+    <string name="msg_print_success">✓ Ricevuta stampata</string>
+    <string name="msg_print_error">Errore di stampa: %1$s</string>
+    <string name="msg_no_printer">Configura una stampante in Impostazioni → Stampante Bluetooth</string>
+    <string name="msg_saved_to_downloads">✓ Salvato in Download/CyberPOS</string>
+    <string name="action_share">CONDIVIDERE</string>
+    <string name="title_two_factor">VERIFICA 2FA</string>
+    <string name="subtitle_two_factor_email">Controlla la tua email %1$s\ne copia il codice di 6 cifre</string>
+    <string name="subtitle_two_factor_sms">Controlla i tuoi messaggi SMS\n e copia il codice di 6 cifre</string>
+    <string name="hint_verification_code">000000</string>
+    <string name="btn_verify_code">Verificare</string>
+    <string name="btn_resend_code">Invia nuovamente il codice</string>
+    <string name="msg_send_2fa_code">Invia codice di verifica</string>
+    <string name="msg_code_sent_sms">Codice inviato tramite SMS</string>
+    <string name="error_code_required">Inserisci il codice di verifica</string>
+    <string name="error_invalid_code">Codice sbagliato. Controlla e riprova.</string>
+    <string name="error_code_expired">Il codice è scaduto. Tocca Invia di nuovo per riceverne uno nuovo.</string>
+    <string name="error_code_used">Questo codice è già stato utilizzato. Tocca Invia di nuovo per riceverne uno nuovo.</string>
+    <string name="error_2fa_failed">Errore durante la verifica del codice. Riprova.</string>
+    <string name="error_no_email_client">Non è stata trovata un\'applicazione di posta sul dispositivo.</string>
+    <string name="msg_sms_2fa_code">Il tuo codice CyberPOS: %1$s (valido 10 minuti)</string>
+    <string name="btn_share_receipt">📄Condividi ricevuta</string>
+    <string name="btn_save_receipt">💾 Salva in Download</string>
+    <string name="msg_share_receipt">Condividi la ricevuta del pagamento</string>
+    <string name="msg_generating_receipt">Generazione ricevuta…</string>
+    <string name="msg_receipt_saved">Ricevuta salvata in Download</string>
+    <string name="error_receipt_generation">Errore durante la generazione della ricevuta</string>
+    <string name="menu_share_receipt">📄Condividi</string>
+    <string name="menu_save_receipt">💾 Salva in Download</string>
+    <string name="title_image_source">Foto del prodotto</string>
 </resources>
