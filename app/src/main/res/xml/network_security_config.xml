@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  ES: Configuración de red para builds de RELEASE: solo HTTPS.
+      La API key de BTCPay viaja en la cabecera Authorization — nunca debe ir
+      sobre HTTP plano en producción. Para desarrollo con BTCPay local (Docker
+      sin TLS) existe un overlay en app/src/debug/res/xml/ que permite cleartext
+      solo en builds de debug.
+  EN: Network config for RELEASE builds: HTTPS only.
+      The BTCPay API key travels in the Authorization header — it must never go
+      over plain HTTP in production. For development against a local BTCPay
+      (Docker without TLS) there is an overlay in app/src/debug/res/xml/ that
+      allows cleartext in debug builds only.
+-->
 <network-security-config>
-    <base-config cleartextTrafficPermitted="true">
+    <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>

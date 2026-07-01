@@ -1,3 +1,13 @@
+# ES: Sincronización automática de traducciones.
+#     - En push a main/dev: traduce los strings faltantes y los commitea a la rama.
+#     - En pull requests: SOLO verifica (dry-run). No intenta push porque el token
+#       de los PRs de forks es de solo lectura y el push fallaría, dejando el
+#       check en rojo para el colaborador sin ser su culpa.
+# EN: Automatic translation sync.
+#     - On push to main/dev: translates missing strings and commits them.
+#     - On pull requests: check ONLY (dry-run). No push attempt because fork PR
+#       tokens are read-only and the push would fail, leaving a red check that
+#       isn't the contributor's fault.
 name: Sync Translations
 
 on:
@@ -14,6 +24,7 @@ on:
 jobs:
   translate:
     name: Auto-translate missing strings
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
 
     permissions:
@@ -23,8 +34,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # Fetch the branch so we can push back to it
-          ref: ${{ github.head_ref || github.ref_name }}
+          ref: ${{ github.ref_name }}
           fetch-depth: 0
 
       - name: Set up Python
@@ -55,3 +65,32 @@ jobs:
           git add app/src/main/res/values-*/strings.xml
           git commit -m "chore: auto-translate missing strings [skip ci]"
           git push
+
+  check:
+    name: Check missing translations (dry-run)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: scripts/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r scripts/requirements.txt
+
+      # ES: Solo informa qué strings faltan; las traducciones reales se
+      #     generan automáticamente cuando el PR se mergea a main/dev.
+      # EN: Only reports which strings are missing; actual translations are
+      #     generated automatically once the PR merges into main/dev.
+      - name: Report missing translations
+        run: python scripts/sync_strings.py --dry-run
