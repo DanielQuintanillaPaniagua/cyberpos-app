@@ -232,6 +232,9 @@ public class GestionProductosActivity extends AppCompatActivity {
             dialogBinding.etNombre.setText(existing.getNombre());
             dialogBinding.etPrecio.setText(String.format(Locale.US, "%.2f", existing.getPrecioUsd()));
             dialogBinding.actCategoria.setText(existing.getCategoria(), false);
+            if (existing.getStock() >= 0) {
+                dialogBinding.etStock.setText(String.valueOf(existing.getStock()));
+            }
             dialogBinding.actDescuentoTipo.setText(discLabelForCode(existing.getDescuentoTipo()), false);
             if (existing.getDescuentoValor() > 0) {
                 dialogBinding.etDescuentoValor.setText(
@@ -286,6 +289,20 @@ public class GestionProductosActivity extends AppCompatActivity {
             }
             if (TextUtils.isEmpty(categoria)) categoria = "Otro";
 
+            // ── Stock (F9) ──
+            String stockStr = dialogBinding.etStock.getText() != null
+                    ? dialogBinding.etStock.getText().toString().trim() : "";
+            int stock = -1;
+            if (!TextUtils.isEmpty(stockStr)) {
+                try {
+                    stock = Integer.parseInt(stockStr);
+                    if (stock < 0) throw new NumberFormatException();
+                } catch (NumberFormatException e) {
+                    dialogBinding.etStock.setError(getString(R.string.error_product_stock_invalid));
+                    return;
+                }
+            }
+
             // ── Descuento (F8) ──
             String discCode = discCodeForLabel(dialogBinding.actDescuentoTipo.getText().toString());
             double discValor = 0;
@@ -334,6 +351,7 @@ public class GestionProductosActivity extends AppCompatActivity {
 
             Producto p = new Producto(nombre, precio, categoria,
                     pendingImageBase64 != null ? pendingImageBase64 : "");
+            p.setStock(stock);
             p.setDescuentoTipo(discCode);
             p.setDescuentoValor(discValor);
             p.setDescuentoAlcance(alcCode);

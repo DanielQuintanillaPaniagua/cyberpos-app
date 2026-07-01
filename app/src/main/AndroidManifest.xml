@@ -118,6 +118,12 @@
             android:windowSoftInputMode="adjustResize" />
 
         <activity
+            android:name=".PuntosLealtadActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
             android:name=".NotificacionesMerchantActivity"
             android:exported="false"
             android:screenOrientation="portrait" />

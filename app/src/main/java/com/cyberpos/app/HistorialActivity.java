@@ -43,6 +43,7 @@ import com.cyberpos.app.model.CartItem;
 import com.cyberpos.app.model.Payment;
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.io.File;
@@ -51,6 +52,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -65,6 +67,10 @@ public class HistorialActivity extends AppCompatActivity {
 
     private CustomerTx pendingSaveTx = null;
     private static final int RC_WRITE_STORAGE = 43;
+
+    // ES: Puntos de lealtad del cliente, por merchantId (F13)
+    // EN: Customer's loyalty points, by merchantId (F13)
+    private final Map<String, Long> pointsByMerchant = new HashMap<>();
 
     // ES: Últimos pagos cargados, para re-formatear cuando cambie la tasa (p. ej. al llegar EUR)
     // EN: Last loaded payments, to re-format when the rate changes (e.g. once EUR arrives)
@@ -82,7 +88,7 @@ public class HistorialActivity extends AppCompatActivity {
         db   = FirebaseFirestore.getInstance();
         auth = FirebaseAuth.getInstance();
 
-        adapter = new CustomerTxAdapter(items, this::onReceiptButtonClick);
+        adapter = new CustomerTxAdapter(items, pointsByMerchant, this::onReceiptButtonClick);
         binding.recyclerView.setLayoutManager(new LinearLayoutManager(this));
         binding.recyclerView.setAdapter(adapter);
 
@@ -95,6 +101,7 @@ public class HistorialActivity extends AppCompatActivity {
         binding.bottomNav.setSelectedItemId(R.id.nav_history);
         PriceService.get().addListener(priceListener);
         loadPayments();
+        loadLoyaltyPoints();
     }
 
     @Override
@@ -113,7 +120,14 @@ public class HistorialActivity extends AppCompatActivity {
                 .whereEqualTo("payerUid", uid)
                 .get()
                 .addOnSuccessListener(snapshot -> {
-                    List<Payment> payments = snapshot.toObjects(Payment.class);
+                    List<Payment> payments = new ArrayList<>();
+                    for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                        Payment p = doc.toObject(Payment.class);
+                        if (p != null) {
+                            p.setId(doc.getId());
+                            payments.add(p);
+                        }
+                    }
                     payments.sort((a, b) -> {
                         Date da = a.getCreatedAt(), db2 = b.getCreatedAt();
                         if (da == null) return 1;
@@ -226,8 +240,28 @@ public class HistorialActivity extends AppCompatActivity {
                     payment.getIvaPercent(),
                     payment.getIsrPercent(),
                     payment.getDiscountType(),
-                    payment.getDiscountValue())));
+                    payment.getDiscountValue(),
+                    payment.getId(),
+                    payment.getMerchantId(),
+                    payment.isRated())));
         }
+    }
+
+    // ── Puntos de lealtad (F13) / Loyalty points (F13) ───────────────────────
+
+    private void loadLoyaltyPoints() {
+        if (auth.getCurrentUser() == null) return;
+        db.collection("customers").document(auth.getCurrentUser().getUid())
+                .collection("puntos")
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    pointsByMerchant.clear();
+                    for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                        Long puntos = doc.getLong("puntos");
+                        if (puntos != null) pointsByMerchant.put(doc.getId(), puntos);
+                    }
+                    adapter.notifyDataSetChanged();
+                });
     }
 
     // ── Recibo / Receipt actions ──────────────────────────────────────────────
@@ -236,11 +270,20 @@ public class HistorialActivity extends AppCompatActivity {
         PopupMenu popup = new PopupMenu(this, anchor);
         popup.getMenu().add(0, 1, 0, getString(R.string.menu_share_receipt));
         popup.getMenu().add(0, 2, 1, getString(R.string.menu_save_receipt));
+        boolean canRate = "settled".equals(tx.status) && !tx.rated
+                && tx.merchantId != null && !tx.merchantId.isEmpty()
+                && tx.paymentId != null && !tx.paymentId.isEmpty();
+        if (canRate) {
+            popup.getMenu().add(0, 3, 2, getString(R.string.menu_rate_business));
+        }
         popup.setOnMenuItemClickListener(item -> {
             if (item.getItemId() == 1) {
                 shareReceipt(tx);
-            } else {
+            } else if (item.getItemId() == 2) {
                 saveReceipt(tx);
+            } else if (item.getItemId() == 3) {
+                RatingHelper.showRatingDialog(this, db, auth, tx.merchantId, tx.paymentId,
+                        this::loadPayments);
             }
             return true;
         });
@@ -388,13 +431,17 @@ public class HistorialActivity extends AppCompatActivity {
         final double isrPercent;
         final String discountType;
         final double discountValue;
+        final String paymentId;
+        final String merchantId;
+        final boolean rated;
 
         CustomerTx(String displayName, String time,
                    double btcAmount, double usdAmount, String status,
                    String invoiceId, String merchantName,
                    List<Map<String, Object>> cartItemMaps,
                    double ivaPercent, double isrPercent,
-                   String discountType, double discountValue) {
+                   String discountType, double discountValue,
+                   String paymentId, String merchantId, boolean rated) {
             this.displayName  = displayName;
             this.time         = time;
             this.btcAmount    = btcAmount;
@@ -407,6 +454,9 @@ public class HistorialActivity extends AppCompatActivity {
             this.isrPercent   = isrPercent;
             this.discountType  = discountType != null ? discountType : "";
             this.discountValue = discountValue;
+            this.paymentId  = paymentId;
+            this.merchantId = merchantId;
+            this.rated      = rated;
         }
     }
 
@@ -437,10 +487,13 @@ public class HistorialActivity extends AppCompatActivity {
     static class CustomerTxAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
         private final List<ListItem> items;
+        private final Map<String, Long> pointsByMerchant;
         private final OnReceiptClickListener receiptListener;
 
-        CustomerTxAdapter(List<ListItem> items, OnReceiptClickListener receiptListener) {
+        CustomerTxAdapter(List<ListItem> items, Map<String, Long> pointsByMerchant,
+                           OnReceiptClickListener receiptListener) {
             this.items = items;
+            this.pointsByMerchant = pointsByMerchant;
             this.receiptListener = receiptListener;
         }
 
@@ -482,6 +535,14 @@ public class HistorialActivity extends AppCompatActivity {
                     vh.tvStatus.setTextColor(
                             holder.itemView.getContext().getColor(R.color.error));
                 }
+                Long puntos = tx.merchantId != null ? pointsByMerchant.get(tx.merchantId) : null;
+                if (puntos != null && puntos > 0) {
+                    vh.tvLoyaltyPoints.setText(holder.itemView.getContext()
+                            .getString(R.string.label_loyalty_points_history, puntos, tx.merchantName));
+                    vh.tvLoyaltyPoints.setVisibility(View.VISIBLE);
+                } else {
+                    vh.tvLoyaltyPoints.setVisibility(View.GONE);
+                }
                 vh.btnShareReceipt.setOnClickListener(v -> receiptListener.onClick(tx, v));
             }
         }
@@ -498,7 +559,7 @@ public class HistorialActivity extends AppCompatActivity {
         }
 
         static class TxViewHolder extends RecyclerView.ViewHolder {
-            final TextView tvStoreName, tvDate, tvBtcAmount, tvUsdAmount, tvStatus;
+            final TextView tvStoreName, tvDate, tvBtcAmount, tvUsdAmount, tvStatus, tvLoyaltyPoints;
             final MaterialButton btnShareReceipt;
 
             TxViewHolder(@NonNull View itemView) {
@@ -508,6 +569,7 @@ public class HistorialActivity extends AppCompatActivity {
                 tvBtcAmount    = itemView.findViewById(R.id.tvBtcAmount);
                 tvUsdAmount    = itemView.findViewById(R.id.tvUsdAmount);
                 tvStatus       = itemView.findViewById(R.id.tvStatus);
+                tvLoyaltyPoints = itemView.findViewById(R.id.tvLoyaltyPoints);
                 btnShareReceipt = itemView.findViewById(R.id.btnShareReceipt);
             }
         }

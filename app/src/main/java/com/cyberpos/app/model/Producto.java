@@ -30,6 +30,10 @@ public class Producto {
     private String imagenBase64;
     private boolean activo;
 
+    // ES: Stock del producto (F9). -1 = ilimitado/sin control de inventario.
+    // EN: Product stock (F9). -1 = unlimited/not tracked.
+    private int stock = -1;
+
     // ES: Descuento por producto (F8) — tipo CartTotals.DISC_* / EN: Per-product discount (F8)
     private String descuentoTipo = CartTotals.DISC_NONE;
     private double descuentoValor = 0;
@@ -76,6 +80,13 @@ public class Producto {
 
     public boolean isActivo() { return activo; }
     public void setActivo(boolean activo) { this.activo = activo; }
+
+    public int getStock() { return stock; }
+    public void setStock(int stock) { this.stock = stock; }
+
+    /** ES: true si el stock está controlado (>= 0) y llegó a cero. / EN: true if stock is tracked and is zero. */
+    @Exclude
+    public boolean isAgotado() { return stock == 0; }
 
     public String getDescuentoTipo() { return descuentoTipo; }
     public void setDescuentoTipo(String descuentoTipo) { this.descuentoTipo = descuentoTipo; }

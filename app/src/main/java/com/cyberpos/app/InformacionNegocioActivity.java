@@ -86,6 +86,7 @@ public class InformacionNegocioActivity extends AppCompatActivity {
                     setText(binding.etNombreNegocio, doc.getString("nombreNegocio"));
                     setText(binding.etNombreComercial, doc.getString("nombreComercial"));
                     setText(binding.etDescripcion, doc.getString("descripcion"));
+                    setText(binding.etHorario, doc.getString("horario"));
                     binding.etCategoria.setText(doc.getString("categoria"), false);
                     setText(binding.etTelefono, doc.getString("telefono"));
                     setText(binding.etEmailNegocio, doc.getString("email"));
@@ -128,6 +129,7 @@ public class InformacionNegocioActivity extends AppCompatActivity {
         data.put("nombreNegocio", getInputText(binding.etNombreNegocio.getText()));
         data.put("nombreComercial", getInputText(binding.etNombreComercial.getText()));
         data.put("descripcion", getInputText(binding.etDescripcion.getText()));
+        data.put("horario", getInputText(binding.etHorario.getText()));
         data.put("categoria", binding.etCategoria.getText().toString().trim());
         data.put("telefono", getInputText(binding.etTelefono.getText()));
         data.put("email", getInputText(binding.etEmailNegocio.getText()));
@@ -156,6 +158,7 @@ public class InformacionNegocioActivity extends AppCompatActivity {
         binding.tilNombreNegocio.setEnabled(enabled);
         binding.tilNombreComercial.setEnabled(enabled);
         binding.tilDescripcion.setEnabled(enabled);
+        binding.tilHorario.setEnabled(enabled);
         binding.tilCategoria.setEnabled(enabled);
         binding.tilTelefono.setEnabled(enabled);
         binding.tilEmailNegocio.setEnabled(enabled);

@@ -21,6 +21,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Base64;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
@@ -73,7 +74,10 @@ public class ProductoAdapter extends RecyclerView.Adapter<ProductoAdapter.ViewHo
             holder.binding.ivProductoImagen.setImageResource(android.R.drawable.ic_menu_add);
         }
 
-        holder.itemView.setOnClickListener(v -> listener.onClick(p));
+        boolean agotado = p.isAgotado();
+        holder.binding.tvBadgeAgotado.setVisibility(agotado ? View.VISIBLE : View.GONE);
+        holder.binding.layoutProductoCard.setAlpha(agotado ? 0.4f : 1f);
+        holder.binding.layoutProductoCard.setOnClickListener(agotado ? null : v -> listener.onClick(p));
     }
 
     @Override

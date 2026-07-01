@@ -100,6 +100,8 @@ public class CatalogoActivity extends AppCompatActivity {
 
         binding.btnCobrar.setOnClickListener(v -> cobrar());
         binding.btnAplicarDescuento.setOnClickListener(v -> showGlobalDiscountDialog());
+        binding.btnCobroMixto.setOnClickListener(v -> showCobroMixtoDialog());
+        binding.btnRedeemPoints.setOnClickListener(v -> showRedeemPointsDialog());
         binding.btnCantidadManual.setOnClickListener(v ->
                 startActivity(new Intent(this, PaymentActivity.class)));
         binding.btnGestionarProductos.setOnClickListener(v ->
@@ -357,6 +359,160 @@ public class CatalogoActivity extends AppCompatActivity {
         intent.putExtra(PaymentActivity.EXTRA_DISCOUNT_TYPE, globalDiscType);
         intent.putExtra(PaymentActivity.EXTRA_DISCOUNT_VALUE, globalDiscValue);
         startActivity(intent);
+    }
+
+    // ── Cobro mixto: efectivo USD + resto en Bitcoin (F10) ────────────────────
+
+    private void showCobroMixtoDialog() {
+        if (cart.isEmpty()) return;
+        double total = CartTotals.compute(cart, globalDiscType, globalDiscValue, ivaPercent, isrPercent).total;
+
+        int pad = (int) (16 * getResources().getDisplayMetrics().density);
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(pad, pad, pad, 0);
+
+        EditText et = new EditText(this);
+        et.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        et.setHint(R.string.hint_cash_amount);
+        layout.addView(et);
+
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.title_cobro_mixto)
+                .setMessage(getString(R.string.msg_cobro_mixto_total, total))
+                .setView(layout)
+                .setPositiveButton(R.string.btn_continue, (d, w) -> {
+                    double cash;
+                    try {
+                        cash = Double.parseDouble(et.getText().toString().trim());
+                    } catch (NumberFormatException e) {
+                        Toast.makeText(this, R.string.error_cash_amount_invalid, Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    if (cash <= 0 || cash >= total) {
+                        Toast.makeText(this, R.string.error_cash_amount_invalid, Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    double btcRemainder = total - cash;
+                    Intent intent = new Intent(this, PaymentActivity.class);
+                    intent.putExtra(PaymentActivity.EXTRA_AMOUNT, btcRemainder);
+                    intent.putExtra(PaymentActivity.EXTRA_CART_ITEMS, new ArrayList<>(cart));
+                    intent.putExtra(PaymentActivity.EXTRA_IVA_PERCENT, ivaPercent);
+                    intent.putExtra(PaymentActivity.EXTRA_ISR_PERCENT, isrPercent);
+                    intent.putExtra(PaymentActivity.EXTRA_DISCOUNT_TYPE, globalDiscType);
+                    intent.putExtra(PaymentActivity.EXTRA_DISCOUNT_VALUE, globalDiscValue);
+                    intent.putExtra(PaymentActivity.EXTRA_CASH_AMOUNT, cash);
+                    startActivity(intent);
+                })
+                .setNegativeButton(R.string.btn_cancel, null)
+                .show();
+    }
+
+    // ── Canjear puntos de lealtad (F13) / Redeem loyalty points (F13) ────────
+
+    private void showRedeemPointsDialog() {
+        if (cart.isEmpty() || auth.getCurrentUser() == null) return;
+
+        int pad = (int) (16 * getResources().getDisplayMetrics().density);
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(pad, pad, pad, 0);
+
+        EditText et = new EditText(this);
+        et.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
+        et.setHint(R.string.hint_customer_email);
+        layout.addView(et);
+
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.title_redeem_points)
+                .setView(layout)
+                .setPositiveButton(R.string.btn_search_customer, (d, w) -> {
+                    String email = et.getText().toString().trim();
+                    if (!email.isEmpty()) lookupCustomerPoints(email);
+                })
+                .setNegativeButton(R.string.btn_cancel, null)
+                .show();
+    }
+
+    private void lookupCustomerPoints(String email) {
+        String merchantUid = auth.getCurrentUser().getUid();
+
+        db.collection("users")
+                .whereEqualTo("email", email)
+                .whereEqualTo("role", "customer")
+                .limit(1)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    if (snapshot.isEmpty()) {
+                        Toast.makeText(this, R.string.error_customer_not_found, Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    String customerId = snapshot.getDocuments().get(0).getId();
+                    loadRedeemConfigAndPoints(merchantUid, customerId);
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, R.string.error_customer_not_found, Toast.LENGTH_SHORT).show());
+    }
+
+    private void loadRedeemConfigAndPoints(String merchantUid, String customerId) {
+        db.collection("users").document(merchantUid)
+                .collection("configuracion").document("lealtad")
+                .get()
+                .addOnSuccessListener(configDoc -> {
+                    double canjeCantidad = parseDoubleOrZero(configDoc.getString("canjeCantidad"));
+                    double canjeDescuentoUsd = parseDoubleOrZero(configDoc.getString("canjeDescuentoUsd"));
+                    if (canjeCantidad <= 0 || canjeDescuentoUsd <= 0) {
+                        Toast.makeText(this, R.string.error_loyalty_not_configured, Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    db.collection("customers").document(customerId)
+                            .collection("puntos").document(merchantUid)
+                            .get()
+                            .addOnSuccessListener(ptsDoc -> {
+                                Long puntos = ptsDoc.getLong("puntos");
+                                long available = puntos != null ? puntos : 0;
+                                if (available < canjeCantidad) {
+                                    Toast.makeText(this, R.string.error_not_enough_points,
+                                            Toast.LENGTH_SHORT).show();
+                                    return;
+                                }
+                                confirmRedeemPoints(merchantUid, customerId, available,
+                                        (long) canjeCantidad, canjeDescuentoUsd);
+                            });
+                });
+    }
+
+    private void confirmRedeemPoints(String merchantUid, String customerId, long available,
+                                      long canjeCantidad, double canjeDescuentoUsd) {
+        double total = CartTotals.compute(cart, globalDiscType, globalDiscValue, ivaPercent, isrPercent).total;
+        double discount = Math.min(canjeDescuentoUsd, total);
+
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.title_redeem_points)
+                .setMessage(getString(R.string.msg_confirm_redeem_points, available, canjeCantidad, discount))
+                .setPositiveButton(R.string.btn_redeem_points, (d, w) -> {
+                    globalDiscType = CartTotals.DISC_FIXED;
+                    globalDiscValue = discount;
+                    updateCartTotal();
+
+                    db.collection("customers").document(customerId)
+                            .collection("puntos").document(merchantUid)
+                            .update("puntos", com.google.firebase.firestore.FieldValue.increment(-canjeCantidad));
+
+                    Toast.makeText(this, R.string.msg_points_redeemed, Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton(R.string.btn_cancel, null)
+                .show();
+    }
+
+    private static double parseDoubleOrZero(String s) {
+        if (s == null || s.isEmpty()) return 0;
+        try {
+            return Double.parseDouble(s);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     // ── Bottom nav ────────────────────────────────────────────────────────────

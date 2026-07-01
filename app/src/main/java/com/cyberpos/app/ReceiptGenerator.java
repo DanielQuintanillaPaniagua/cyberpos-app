@@ -88,6 +88,29 @@ public final class ReceiptGenerator {
             String discountType,
             double discountValue,
             Bitmap logo) throws IOException {
+        return generate(ctx, businessName, invoiceId, amountUsd, amountBtc, items,
+                ivaPercent, isrPercent, discountType, discountValue, 0, logo);
+    }
+
+    /**
+     * ES: Igual que {@link #generate} pero además admite el desglose de cobro mixto (F10):
+     *     {@code cashAmountUsd} > 0 imprime "Efectivo: $X / Bitcoin: $Y (Z sats)".
+     * EN: Same as {@link #generate} plus the mixed-payment breakdown (F10):
+     *     {@code cashAmountUsd} > 0 prints "Efectivo: $X / Bitcoin: $Y (Z sats)".
+     */
+    public static File generate(
+            Context ctx,
+            String businessName,
+            String invoiceId,
+            double amountUsd,
+            double amountBtc,
+            List<CartItem> items,
+            double ivaPercent,
+            double isrPercent,
+            String discountType,
+            double discountValue,
+            double cashAmountUsd,
+            Bitmap logo) throws IOException {
 
         PdfDocument doc = new PdfDocument();
         PdfDocument.PageInfo pageInfo = new PdfDocument.PageInfo.Builder(W, H, 1).create();
@@ -98,7 +121,7 @@ public final class ReceiptGenerator {
         y = drawTransactionInfo(cv, invoiceId, y);
         y = drawItemsTable(cv, items, y);
         y = drawTotals(cv, amountUsd, amountBtc, items, ivaPercent, isrPercent,
-                discountType, discountValue, y);
+                discountType, discountValue, cashAmountUsd, y);
         drawFooter(cv, y);
 
         doc.finishPage(page);
@@ -227,7 +250,7 @@ public final class ReceiptGenerator {
     private static float drawTotals(Canvas cv, double amountUsd, double amountBtc,
                                      List<CartItem> items, double ivaPercent, double isrPercent,
                                      String discountType, double discountValue,
-                                     float startY) {
+                                     double cashAmountUsd, float startY) {
         float y = startY + 8f;
 
         CartTotals t = CartTotals.compute(items, discountType, discountValue, ivaPercent, isrPercent);
@@ -273,8 +296,18 @@ public final class ReceiptGenerator {
                 W - M, y + 18f, text(C_GREEN, 20f, true));
         y += 28f;
 
-        // BTC equivalent
-        if (amountBtc > 0) {
+        // ES: Desglose de cobro mixto (F10): efectivo + resto en Bitcoin (con sats)
+        // EN: Mixed payment breakdown (F10): cash + BTC remainder (with sats)
+        if (cashAmountUsd > 0) {
+            double btcPortionUsd = amountUsd - cashAmountUsd;
+            long sats = Math.round(amountBtc * 100_000_000);
+            String breakdown = String.format(Locale.US,
+                    "Efectivo: $%.2f  /  Bitcoin: $%.2f (%,d sats)",
+                    cashAmountUsd, btcPortionUsd, sats);
+            drawRight(cv, breakdown, W - M, y, text(C_SEC, 9f, true));
+            y += 16f;
+        } else if (amountBtc > 0) {
+            // BTC equivalent (pago 100% Bitcoin)
             drawRight(cv, String.format(Locale.US, "≈ %.8f BTC", amountBtc),
                     W - M, y, text(C_SEC, 9f, false));
             y += 16f;

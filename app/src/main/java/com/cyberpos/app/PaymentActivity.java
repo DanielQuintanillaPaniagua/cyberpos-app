@@ -64,6 +64,7 @@ public class PaymentActivity extends AppCompatActivity {
     public static final String EXTRA_ISR_PERCENT     = "extra_isr_percent";
     public static final String EXTRA_DISCOUNT_TYPE   = "extra_discount_type";
     public static final String EXTRA_DISCOUNT_VALUE  = "extra_discount_value";
+    public static final String EXTRA_CASH_AMOUNT     = "extra_cash_amount";
 
     private static final int QR_SIZE = 600;
     private static final long POLL_INTERVAL_MS = 3_000L;
@@ -91,6 +92,7 @@ public class PaymentActivity extends AppCompatActivity {
     private double isrPercent = 0;
     private String discountType = "";
     private double discountValue = 0;
+    private double cashAmountUsd = 0;
     private Bitmap merchantLogo = null;
 
     private static final int RC_WRITE_STORAGE = 43;
@@ -147,10 +149,15 @@ public class PaymentActivity extends AppCompatActivity {
         discountType = intent.getStringExtra(EXTRA_DISCOUNT_TYPE);
         if (discountType == null) discountType = "";
         discountValue = intent.getDoubleExtra(EXTRA_DISCOUNT_VALUE, 0);
+        cashAmountUsd = intent.getDoubleExtra(EXTRA_CASH_AMOUNT, 0);
 
         binding.etAmount.setText(String.format(Locale.US, "%.2f", amount));
         if (cartItemsFromIntent != null && !cartItemsFromIntent.isEmpty()) {
             binding.etDescription.setText(buildCartDescription(cartItemsFromIntent));
+        }
+        if (cashAmountUsd > 0) {
+            binding.tvMixedInfo.setText(getString(R.string.label_mixed_payment_info, cashAmountUsd, amount));
+            binding.tvMixedInfo.setVisibility(View.VISIBLE);
         }
         binding.getRoot().post(this::handleGenerateQr);
     }
@@ -283,7 +290,7 @@ public class PaymentActivity extends AppCompatActivity {
                                        String description, String invoiceId) {
         // ES: Capturar datos del pago para el recibo
         // EN: Capture payment data for receipt
-        currentAmountUsd  = amount;
+        currentAmountUsd  = amount + cashAmountUsd;
         currentAmountBtc  = btcUsdRate > 0 ? amount / btcUsdRate : 0;
         currentDescription = description;
 
@@ -348,9 +355,37 @@ public class PaymentActivity extends AppCompatActivity {
             db.collection("payments").document(firestoreDocId)
                     .update("status", "settled");
         }
+        descontarStock();
 
         binding.scrollViewForm.setVisibility(View.GONE);
         binding.layoutPaymentSuccess.setVisibility(View.VISIBLE);
+    }
+
+    // ── Descuento de stock (F9) / Stock deduction (F9) ───────────────────────
+
+    private void descontarStock() {
+        if (cartItemsFromIntent == null || cartItemsFromIntent.isEmpty()
+                || auth.getCurrentUser() == null) {
+            return;
+        }
+        String uid = auth.getCurrentUser().getUid();
+        for (CartItem item : cartItemsFromIntent) {
+            String productoId = item.getProductoId();
+            int cantidad = item.getCantidad();
+            if (productoId == null || productoId.isEmpty() || cantidad <= 0) continue;
+
+            com.google.firebase.firestore.DocumentReference ref = db.collection("users")
+                    .document(uid).collection("productos").document(productoId);
+            db.runTransaction(transaction -> {
+                com.google.firebase.firestore.DocumentSnapshot snap = transaction.get(ref);
+                Long stock = snap.getLong("stock");
+                if (stock != null && stock >= 0) {
+                    long nuevoStock = Math.max(0, stock - cantidad);
+                    transaction.update(ref, "stock", nuevoStock);
+                }
+                return null;
+            });
+        }
     }
 
     private void resetToForm() {
@@ -379,12 +414,19 @@ public class PaymentActivity extends AppCompatActivity {
                                         String bolt11, String invoiceId) {
         String uid = auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : "unknown";
         double amountBtc = btcUsdRate > 0 ? amount / btcUsdRate : 0;
-        Payment payment = new Payment(uid, amount, amountBtc, "", description, bolt11, invoiceId);
+        // ES: "amount" es solo la porción facturada en Bitcoin (F10); el total de la venta
+        //     incluye además el efectivo recibido.
+        // EN: "amount" is only the BTC-invoiced portion (F10); the sale total also includes
+        //     the cash received.
+        double totalUsd = amount + cashAmountUsd;
+        Payment payment = new Payment(uid, totalUsd, amountBtc, "", description, bolt11, invoiceId);
         payment.setMerchantName(merchantBusinessName);
         payment.setIvaPercent(ivaPercent);
         payment.setIsrPercent(isrPercent);
         payment.setDiscountType(discountType);
         payment.setDiscountValue(discountValue);
+        payment.setCashAmountUsd(cashAmountUsd);
+        payment.setPaymentType(cashAmountUsd > 0 ? "mixto" : "bitcoin");
         payment.setDiscountUsd(CartTotals.compute(
                 cartItemsFromIntent, discountType, discountValue, ivaPercent, isrPercent).descuento);
 
@@ -441,12 +483,13 @@ public class PaymentActivity extends AppCompatActivity {
         final double isr    = isrPercent;
         final String discT  = discountType;
         final double discV   = discountValue;
+        final double cashV   = cashAmountUsd;
         final Bitmap logo   = merchantLogo;
 
         new Thread(() -> {
             try {
                 java.io.File pdf = ReceiptGenerator.generate(
-                        this, biz, invId, usd, btc, items, iva, isr, discT, discV, logo);
+                        this, biz, invId, usd, btc, items, iva, isr, discT, discV, cashV, logo);
                 ReceiptGenerator.saveToDownloads(this, pdf);
                 runOnUiThread(() -> {
                     binding.btnSaveReceipt.setEnabled(true);
@@ -501,12 +544,13 @@ public class PaymentActivity extends AppCompatActivity {
         final double isr     = isrPercent;
         final String discT   = discountType;
         final double discV   = discountValue;
+        final double cashV   = cashAmountUsd;
         final Bitmap logo    = merchantLogo;
 
         new Thread(() -> {
             try {
                 java.io.File pdf = ReceiptGenerator.generate(
-                        this, biz, invId, usd, btc, items, iva, isr, discT, discV, logo);
+                        this, biz, invId, usd, btc, items, iva, isr, discT, discV, cashV, logo);
                 runOnUiThread(() -> {
                     binding.btnShareReceipt.setEnabled(true);
                     Uri uri = FileProvider.getUriForFile(
@@ -569,6 +613,7 @@ public class PaymentActivity extends AppCompatActivity {
                 currentDescription,
                 currentAmountUsd,
                 currentAmountBtc,
+                cashAmountUsd,
                 new PrinterManager.PrintCallback() {
                     @Override public void onSuccess() {
                         Toast.makeText(PaymentActivity.this,

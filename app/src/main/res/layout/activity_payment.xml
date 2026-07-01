@@ -153,6 +153,20 @@
                 android:orientation="vertical"
                 android:padding="24dp">
 
+                <!-- Cobro mixto info (F10) -->
+                <TextView
+                    android:id="@+id/tvMixedInfo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:background="@drawable/bg_wallet_card"
+                    android:fontFamily="monospace"
+                    android:lineSpacingExtra="2dp"
+                    android:padding="12dp"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp"
+                    android:visibility="gone" />
+
                 <!-- Amount input -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tilAmount"

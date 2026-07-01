@@ -238,6 +238,131 @@ public final class ReportExporter {
         cv.drawText(text, M, H - 14, textPaint(Color.GRAY, 7f, false));
     }
 
+    // ── PDF de analytics (F14) / Analytics PDF (F14) ─────────────────────────
+
+    /**
+     * ES: Reporte de una página con el resumen del dashboard: totales del período,
+     *     top 5 productos, alertas de stock bajo y calificación promedio.
+     * EN: One-page report with the dashboard summary: period totals, top 5 products,
+     *     low-stock alerts and average rating.
+     */
+    public static File generateAnalyticsPdf(
+            Context ctx,
+            String businessName,
+            String periodLabel,
+            int txCount,
+            double totalUsd,
+            double totalBtc,
+            List<String> topProducts,
+            List<String> lowStockItems,
+            double ratingAvg,
+            int ratingCount) throws IOException {
+
+        PdfDocument doc = new PdfDocument();
+        PdfDocument.PageInfo info = new PdfDocument.PageInfo.Builder(W, H, 1).create();
+        PdfDocument.Page page = doc.startPage(info);
+        Canvas cv = page.getCanvas();
+
+        float y = drawAnalyticsHeader(cv, businessName, periodLabel);
+        y = drawAnalyticsSummary(cv, txCount, totalUsd, totalBtc, y);
+        y = drawAnalyticsListSection(cv, "TOP 5 PRODUCTOS", topProducts,
+                "Sin ventas en este período", y);
+        y = drawAnalyticsListSection(cv, "ALERTA DE STOCK BAJO", lowStockItems,
+                "Sin productos con stock bajo", y);
+        drawAnalyticsRating(cv, ratingAvg, ratingCount, y);
+
+        drawFooter(cv, 1);
+        doc.finishPage(page);
+
+        File out = reportFile(ctx, "analytics", "pdf");
+        try (FileOutputStream fos = new FileOutputStream(out)) {
+            doc.writeTo(fos);
+        }
+        doc.close();
+        return out;
+    }
+
+    private static float drawAnalyticsHeader(Canvas cv, String biz, String periodLabel) {
+        Paint bg = fillPaint(Color.BLACK);
+        cv.drawRect(0, 0, W, 72, bg);
+
+        cv.drawText("CyberPOS",
+                M, 28, textPaint(Color.parseColor("#00FF88"), 20f, true));
+        cv.drawText("Lightning Payments para tu negocio",
+                M, 44, textPaint(Color.WHITE, 9f, false));
+        cv.drawText("REPORTE DE ANALYTICS",
+                M, 64, textPaint(Color.parseColor("#00FF88"), 12f, true));
+
+        float y = 88f;
+        cv.drawText(biz != null && !biz.isEmpty() ? biz : "Mi Negocio",
+                M, y, textPaint(Color.BLACK, 15f, true));
+        cv.drawText("Período: " + periodLabel, M, y + 16, textPaint(Color.GRAY, 9f, false));
+
+        Paint line = new Paint(Paint.ANTI_ALIAS_FLAG);
+        line.setColor(Color.parseColor("#00FF88"));
+        line.setStrokeWidth(2f);
+        cv.drawLine(M, y + 26, W - M, y + 26, line);
+
+        return y + 40;
+    }
+
+    private static float drawAnalyticsSummary(Canvas cv, int txCount, double totalUsd,
+                                               double totalBtc, float y) {
+        cv.drawRect(M, y, W - M, y + 52, fillPaint(Color.parseColor("#F0F0F0")));
+
+        float cw = (W - 2 * M) / 3f;
+        float[] xs = {M + 10, M + cw + 10, M + 2 * cw + 10};
+        String[] labels = {"TRANSACCIONES", "TOTAL USD", "TOTAL BTC"};
+        String[] values = {
+                String.valueOf(txCount),
+                String.format(Locale.US, "$%.2f", totalUsd),
+                String.format(Locale.US, "%.8f", totalBtc)
+        };
+
+        Paint lbl = textPaint(Color.parseColor("#888888"), 8f, false);
+        Paint val = textPaint(Color.BLACK, 13f, true);
+
+        for (int i = 0; i < 3; i++) {
+            cv.drawText(labels[i], xs[i], y + 18, lbl);
+            cv.drawText(values[i], xs[i], y + 40, val);
+        }
+
+        return y + 68;
+    }
+
+    private static float drawAnalyticsListSection(Canvas cv, String title, List<String> items,
+                                                   String emptyLabel, float y) {
+        cv.drawText(title, M, y + 12, textPaint(Color.parseColor("#888888"), 9f, true));
+        y += 22;
+
+        if (items == null || items.isEmpty()) {
+            cv.drawText(emptyLabel, M, y + 10, textPaint(Color.GRAY, 9f, false));
+            return y + 26;
+        }
+
+        Paint cell = textPaint(Color.BLACK, 10f, false);
+        Paint divider = new Paint();
+        divider.setColor(Color.parseColor("#E0E0E0"));
+        divider.setStrokeWidth(0.5f);
+
+        for (String item : items) {
+            cv.drawText("•  " + item, M, y + 12, cell);
+            cv.drawLine(M, y + 18, W - M, y + 18, divider);
+            y += 22;
+        }
+        return y + 12;
+    }
+
+    private static void drawAnalyticsRating(Canvas cv, double ratingAvg, int ratingCount, float y) {
+        cv.drawText("CALIFICACIÓN PROMEDIO", M, y + 12, textPaint(Color.parseColor("#888888"), 9f, true));
+        y += 22;
+
+        String text = ratingCount > 0
+                ? String.format(Locale.US, "★ %.1f  (%d calificaciones)", ratingAvg, ratingCount)
+                : "Sin calificaciones aún";
+        cv.drawText(text, M, y + 14, textPaint(Color.parseColor("#F7931A"), 13f, true));
+    }
+
     // ── CSV / CSV ────────────────────────────────────────────────────────────
 
     public static File generateCsv(Context ctx, List<Payment> payments) throws IOException {

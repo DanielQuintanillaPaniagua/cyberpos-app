@@ -57,9 +57,10 @@ public class GestionProductosAdapter extends RecyclerView.Adapter<GestionProduct
         Producto p = productos.get(position);
         holder.binding.tvGestionNombre.setText(p.getNombre());
         holder.binding.tvGestionDetalles.setText(
-                String.format(Locale.US, "%s • $%.2f",
+                String.format(Locale.US, "%s • $%.2f • %s",
                         p.getCategoria() != null ? p.getCategoria() : "—",
-                        p.getPrecioUsd()));
+                        p.getPrecioUsd(),
+                        stockLabel(holder, p)));
 
         holder.binding.btnEditProducto.setOnClickListener(v ->
                 listener.onEdit(p, holder.getAdapterPosition()));
@@ -69,6 +70,13 @@ public class GestionProductosAdapter extends RecyclerView.Adapter<GestionProduct
 
     @Override
     public int getItemCount() { return productos.size(); }
+
+    private String stockLabel(ViewHolder holder, Producto p) {
+        android.content.Context ctx = holder.itemView.getContext();
+        if (p.getStock() < 0) return ctx.getString(R.string.label_stock_unlimited);
+        if (p.getStock() == 0) return ctx.getString(R.string.badge_out_of_stock);
+        return ctx.getString(R.string.label_stock_count, p.getStock());
+    }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
         final ItemGestionProductoBinding binding;

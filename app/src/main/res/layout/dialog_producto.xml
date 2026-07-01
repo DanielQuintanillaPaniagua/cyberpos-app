@@ -71,6 +71,27 @@
 
     </com.google.android.material.textfield.TextInputLayout>
 
+    <!-- Stock (F9) -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:hint="@string/hint_product_stock"
+        app:boxStrokeColor="@color/neon_green"
+        app:hintTextColor="@color/text_secondary"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etStock"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:inputType="number"
+            android:maxLines="1"
+            android:textColor="@color/text_primary" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
     <!-- Descuento (F8) -->
     <LinearLayout
         android:layout_width="match_parent"

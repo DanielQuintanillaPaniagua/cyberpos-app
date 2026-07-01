@@ -83,6 +83,8 @@ public class MerchantAjustesActivity extends AppCompatActivity {
             startActivity(new Intent(this, CuentasBancariasActivity.class)));
         binding.rowTaxes.setOnClickListener(v ->
             startActivity(new Intent(this, ImpuestosTarifasActivity.class)));
+        binding.rowPuntosLealtad.setOnClickListener(v ->
+            startActivity(new Intent(this, PuntosLealtadActivity.class)));
         binding.rowMerchantNotifications.setOnClickListener(v ->
             startActivity(new Intent(this, NotificacionesMerchantActivity.class)));
         binding.rowPaymentScreen.setOnClickListener(v ->
