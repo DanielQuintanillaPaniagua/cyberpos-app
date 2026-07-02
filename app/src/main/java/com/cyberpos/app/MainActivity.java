@@ -55,10 +55,19 @@ public class MainActivity extends AppCompatActivity {
                     Class<?> dest = "merchant".equals(role)
                             ? CatalogoActivity.class
                             : CustomerHomeActivity.class;
-                    Intent intent = new Intent(this, dest);
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    startActivity(intent);
-                    finish();
+                    // ES: Candado biométrico local antes de entrar (si está activo)
+                    // EN: Local biometric lock before entering (if enabled)
+                    BiometricLock.gate(this, uid, new BiometricLock.Callback() {
+                        @Override public void onUnlocked() {
+                            Intent intent = new Intent(MainActivity.this, dest);
+                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                            startActivity(intent);
+                            finish();
+                        }
+                        @Override public void onCancelled() {
+                            finishAffinity();
+                        }
+                    });
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(this, getString(R.string.login_failed, e.getMessage()), Toast.LENGTH_SHORT).show();

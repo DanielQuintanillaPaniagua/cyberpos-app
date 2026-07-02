@@ -33,9 +33,10 @@ public class CyberPOSApp extends Application {
     public void onCreate() {
         super.onCreate();
 
-        // ES: Credenciales BTCPay cifradas del dispositivo — antes de cualquier uso de BtcPayClient
-        // EN: Device-encrypted BTCPay credentials — before any BtcPayClient use
+        // ES: Almacenamiento cifrado del dispositivo — antes de cualquier uso
+        // EN: Device-encrypted storage — before any use
         BtcPayConfig.init(this);
+        BiometricLock.init(this);
 
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
 

@@ -22,19 +22,23 @@ import android.view.View;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.biometric.BiometricManager;
 
 import com.cyberpos.app.databinding.ActivityDosFaBinding;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.FirebaseFirestore;
 
-import java.util.HashMap;
-import java.util.Map;
-
+/**
+ * ES: Pantalla del candado biométrico del comerciante. Reemplaza al antiguo 2FA
+ *     por email/SMS (que era teatro). El estado se guarda cifrado en el
+ *     dispositivo vía BiometricLock; la verificación la hace el sistema Android.
+ * EN: Merchant biometric-lock screen. Replaces the old email/SMS 2FA (which was
+ *     theatre). State is stored device-encrypted via BiometricLock; the check is
+ *     performed by Android.
+ */
 public class DosFaActivity extends AppCompatActivity {
 
     private ActivityDosFaBinding binding;
     private FirebaseAuth auth;
-    private FirebaseFirestore db;
     private boolean isLoading = true;
 
     @Override
@@ -44,68 +48,69 @@ public class DosFaActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         auth = FirebaseAuth.getInstance();
-        db = FirebaseFirestore.getInstance();
+
+        // ES: Ocultar el antiguo selector de método (email/SMS) — ya no aplica
+        // EN: Hide the old method selector (email/SMS) — no longer applies
+        binding.labelMetodo.setVisibility(View.GONE);
+        binding.cardMetodo.setVisibility(View.GONE);
 
         binding.btnBack.setOnClickListener(v -> finish());
-        setupListeners();
-        loadConfig();
-    }
 
-    private void setupListeners() {
-        binding.switchDosFa.setOnCheckedChangeListener((btn, checked) -> {
-            updateMetodoVisibility(checked);
-            if (!isLoading) saveConfig();
-        });
-
-        binding.radioGroupMetodo.setOnCheckedChangeListener((group, checkedId) -> {
-            if (!isLoading) saveConfig();
-        });
-    }
-
-    private void loadConfig() {
-        if (auth.getCurrentUser() == null) { isLoading = false; return; }
-        String uid = auth.getCurrentUser().getUid();
+        String uid = uid();
         isLoading = true;
-        db.collection("users").document(uid)
-            .collection("configuracion").document("dos_fa")
-            .get()
-            .addOnSuccessListener(doc -> {
-                if (doc.exists()) {
-                    Boolean habilitado = doc.getBoolean("habilitado");
-                    if (habilitado != null) binding.switchDosFa.setChecked(habilitado);
-                    String metodo = doc.getString("metodo");
-                    if ("sms".equals(metodo)) {
-                        binding.radioSms.setChecked(true);
-                    } else {
-                        binding.radioEmail.setChecked(true);
-                    }
-                }
-                isLoading = false;
-            })
-            .addOnFailureListener(e -> { isLoading = false; });
+        binding.switchDosFa.setChecked(BiometricLock.isEnabled(uid));
+        updateStateLabel(BiometricLock.isEnabled(uid));
+        isLoading = false;
+
+        binding.switchDosFa.setOnCheckedChangeListener((btn, checked) -> {
+            if (isLoading) return;
+            if (checked) {
+                enableWithBiometricConfirmation();
+            } else {
+                BiometricLock.setEnabled(uid(), false);
+                updateStateLabel(false);
+            }
+        });
     }
 
-    private void saveConfig() {
-        if (auth.getCurrentUser() == null) return;
-        String uid = auth.getCurrentUser().getUid();
+    private void enableWithBiometricConfirmation() {
+        int status = BiometricLock.status(this);
+        if (status == BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE) {
+            revert(getString(R.string.error_biometric_no_hardware));
+            return;
+        }
+        if (status == BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED) {
+            revert(getString(R.string.error_biometric_none_enrolled));
+            return;
+        }
+        if (status != BiometricManager.BIOMETRIC_SUCCESS) {
+            revert(getString(R.string.error_biometric_unavailable));
+            return;
+        }
 
-        String metodo = binding.radioSms.isChecked() ? "sms" : "email";
-        Map<String, Object> data = new HashMap<>();
-        data.put("habilitado", binding.switchDosFa.isChecked());
-        data.put("metodo", metodo);
-
-        db.collection("users").document(uid)
-            .collection("configuracion").document("dos_fa")
-            .set(data)
-            .addOnFailureListener(e ->
-                Toast.makeText(this, getString(R.string.msg_save_error, e.getMessage()),
-                    Toast.LENGTH_SHORT).show());
+        BiometricLock.prompt(this, getString(R.string.biometric_confirm_subtitle),
+                () -> {
+                    BiometricLock.setEnabled(uid(), true);
+                    updateStateLabel(true);
+                },
+                () -> revert(null));
     }
 
-    private void updateMetodoVisibility(boolean show) {
-        int visibility = show ? View.VISIBLE : View.GONE;
-        binding.labelMetodo.setVisibility(visibility);
-        binding.cardMetodo.setVisibility(visibility);
-        binding.tvEstado2fa.setText(show ? "Activado" : "Desactivado");
+    private void updateStateLabel(boolean enabled) {
+        binding.tvEstado2fa.setText(enabled
+                ? R.string.label_biometric_enabled
+                : R.string.label_biometric_disabled);
+    }
+
+    private void revert(String message) {
+        isLoading = true;
+        binding.switchDosFa.setChecked(false);
+        updateStateLabel(false);
+        isLoading = false;
+        if (message != null) Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+    }
+
+    private String uid() {
+        return auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : null;
     }
 }

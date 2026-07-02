@@ -33,7 +33,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:fontFamily="monospace"
-            android:text="AUTENTICACIÓN 2FA"
+            android:text="@string/title_biometric_lock"
             android:textColor="@color/text_primary"
             android:textSize="16sp"
             android:textStyle="bold" />

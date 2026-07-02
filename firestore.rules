@@ -1,0 +1,161 @@
+rules_version = '2';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CyberPOS — Reglas de seguridad de Firestore / Firestore security rules
+//
+// ES: Estas reglas SON la barrera de seguridad real de la app: todo el código
+//     Android corre en dispositivos del usuario y puede ser modificado.
+//     Desplegar con: consola Firebase → Firestore → Reglas → pegar → Publicar,
+//     o `firebase deploy --only firestore:rules`.
+//
+//     Compromisos conocidos (documentados a propósito — sin backend no hay
+//     forma mejor; ver Issues del repo):
+//     1. payments se puede LEER por cualquier usuario autenticado: el flujo del
+//        cliente localiza el pago por btcPayInvoiceId escaneado del QR, y las
+//        reglas no pueden probar la relación antes de que exista payerUid.
+//     2. El cliente puede actualizar campos limitados de un pago (payerUid,
+//        customerName, status, rated) — el estado "settled" lo marca el
+//        dispositivo que observa el pago; con un backend/webhook esto migraría
+//        al servidor.
+//
+// EN: These rules ARE the app's real security boundary: all Android code runs
+//     on user devices and can be tampered with.
+//     Deploy via: Firebase console → Firestore → Rules → paste → Publish,
+//     or `firebase deploy --only firestore:rules`.
+//
+//     Known compromises (deliberately documented — without a backend there is
+//     no better option; see repo Issues):
+//     1. payments is READABLE by any authenticated user: the customer flow
+//        finds the payment by the btcPayInvoiceId scanned from the QR, and
+//        rules can't prove the relationship before payerUid exists.
+//     2. Customers may update a limited set of payment fields (payerUid,
+//        customerName, status, rated) — "settled" is marked by the device that
+//        observes the payment; with a backend/webhook this moves server-side.
+// ═══════════════════════════════════════════════════════════════════════════
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helpers ────────────────────────────────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // ES: El rol del que hace la petición (lectura extra de 1 doc, cacheada).
+    // EN: Requester's role (one extra cached doc read).
+    function requesterRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    // ES: El rol no puede cambiar una vez asignado (evita cliente→comerciante).
+    // EN: Role can never change once set (prevents customer→merchant escalation).
+    function roleUnchanged() {
+      return !('role' in request.resource.data)
+          || !('role' in resource.data)
+          || request.resource.data.role == resource.data.role;
+    }
+
+    // ── users/{uid} — perfil / profile ─────────────────────────────────────
+    match /users/{uid} {
+      allow get: if isOwner(uid);
+      // ES: Los comerciantes buscan clientes por email para canjear puntos
+      //     (CatalogoActivity). Solo pueden listar docs con role == "customer".
+      // EN: Merchants look customers up by email to redeem loyalty points
+      //     (CatalogoActivity). They can only list docs with role == "customer".
+      allow list: if isSignedIn()
+                  && requesterRole() == 'merchant'
+                  && resource.data.role == 'customer';
+      allow create: if isOwner(uid)
+                    && request.resource.data.role in ['merchant', 'customer'];
+      allow update: if isOwner(uid) && roleUnchanged();
+      allow delete: if false;
+
+      // ── Subcolecciones privadas del dueño / Owner-private subcollections ─
+      match /productos/{doc}         { allow read, write: if isOwner(uid); }
+      match /cuentas_bancarias/{doc} { allow read, write: if isOwner(uid); }
+      match /perfil/{doc}            { allow read, write: if isOwner(uid); }
+      match /dispositivos/{doc}      { allow read, write: if isOwner(uid); }
+      match /transacciones/{doc}     { allow read, write: if isOwner(uid); }
+
+      // ES: Datos del negocio: el dueño escribe; cualquier usuario autenticado
+      //     puede verlos (diálogo de perfil del comerciante al pagar).
+      // EN: Business info: owner writes; any signed-in user can view it
+      //     (merchant profile dialog shown to paying customers).
+      match /negocio/{doc} {
+        allow read: if isSignedIn();
+        allow write: if isOwner(uid);
+      }
+
+      // ES: Configuración: privada del dueño, EXCEPTO dos docs que los
+      //     clientes necesitan leer: pantalla_cobro (logo) y lealtad (tasa de
+      //     puntos). pin / otp / dos_fa / biometria quedan solo del dueño.
+      // EN: Settings: owner-private, EXCEPT two docs customers must read:
+      //     pantalla_cobro (logo) and lealtad (points rate). pin / otp /
+      //     dos_fa / biometria stay owner-only.
+      match /configuracion/{doc} {
+        allow get: if isOwner(uid)
+                   || (isSignedIn() && doc in ['pantalla_cobro', 'lealtad']);
+        allow list: if isOwner(uid);
+        allow write: if isOwner(uid);
+      }
+    }
+
+    // ── payments/{id} — colección plana / flat collection ──────────────────
+    match /payments/{paymentId} {
+      // ES: Compromiso 1 del encabezado: lectura para autenticados (lookup por
+      //     btcPayInvoiceId del cliente). El comerciante lista por merchantId,
+      //     el cliente por payerUid.
+      // EN: Header compromise 1: reads for authenticated users (customer's
+      //     btcPayInvoiceId lookup). Merchant lists by merchantId, customer by
+      //     payerUid.
+      allow read: if isSignedIn();
+
+      // ES: Solo un comerciante crea pagos, y solo a su propio nombre.
+      // EN: Only a merchant creates payments, and only under their own uid.
+      allow create: if isSignedIn()
+                    && request.resource.data.merchantId == request.auth.uid;
+
+      // ES: El comerciante dueño actualiza lo que sea; cualquier otro usuario
+      //     autenticado solo los campos del flujo de pago del cliente
+      //     (compromiso 2 del encabezado).
+      // EN: The owning merchant updates anything; any other signed-in user only
+      //     the customer-payment-flow fields (header compromise 2).
+      allow update: if isSignedIn()
+                    && (resource.data.merchantId == request.auth.uid
+                        || request.resource.data.diff(resource.data).affectedKeys()
+                             .hasOnly(['payerUid', 'customerName', 'status', 'rated']));
+
+      allow delete: if false;
+    }
+
+    // ── customers/{customerId}/puntos/{merchantId} — puntos de lealtad ─────
+    // ES: El doc une cliente y comerciante por sus IDs: ambos pueden leerlo y
+    //     escribirlo (el cliente acumula, el comerciante canjea).
+    // EN: The doc ties customer and merchant by their IDs: both may read and
+    //     write it (customer accrues, merchant redeems).
+    match /customers/{customerId}/puntos/{merchantId} {
+      allow read, write: if isOwner(customerId) || isOwner(merchantId);
+    }
+
+    // ── merchants/{merchantId}/ratings/{paymentId} — calificaciones ────────
+    // ES: Cualquier autenticado las lee (promedio público del negocio). Solo
+    //     se CREAN (id = paymentId ⇒ una por pago) y con customerId propio;
+    //     nunca se editan ni borran.
+    // EN: Any signed-in user reads them (public business average). They can
+    //     only be CREATED (id = paymentId ⇒ one per payment) with the caller's
+    //     own customerId; never edited or deleted.
+    match /merchants/{merchantId}/ratings/{paymentId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+                    && request.resource.data.customerId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // ES: Todo lo no listado queda denegado (comportamiento por defecto).
+    // EN: Anything not matched above is denied (default behavior).
+  }
+}

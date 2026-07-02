@@ -84,13 +84,14 @@ public class LoginActivity extends AppCompatActivity {
                 .addOnFailureListener(e -> showRetry(this::routeByRole));
     }
 
-    // Called after a fresh login — checks 2FA before navigating
+    // Called after a fresh login
     private void routeAfterLogin() {
         String uid = auth.getCurrentUser().getUid();
         db.collection("users").document(uid).get()
                 .addOnSuccessListener(doc -> {
+                    setLoading(false);
                     String role = doc.exists() ? doc.getString("role") : null;
-                    check2FA(uid, role);
+                    navigateToMain(role);
                 })
                 .addOnFailureListener(e -> {
                     setLoading(false);
@@ -98,44 +99,27 @@ public class LoginActivity extends AppCompatActivity {
                 });
     }
 
-    private void check2FA(String uid, String role) {
-        db.collection("users").document(uid)
-                .collection("configuracion").document("dos_fa")
-                .get()
-                .addOnSuccessListener(doc -> {
-                    setLoading(false);
-                    Boolean habilitado = doc.exists() ? doc.getBoolean("habilitado") : null;
-                    if (Boolean.TRUE.equals(habilitado)) {
-                        String metodo = doc.getString("metodo");
-                        Intent intent = new Intent(this, TwoFactorActivity.class);
-                        intent.putExtra(TwoFactorActivity.EXTRA_ROLE, role);
-                        intent.putExtra(TwoFactorActivity.EXTRA_METODO, metodo != null ? metodo : "email");
-                        intent.putExtra(TwoFactorActivity.EXTRA_EMAIL, auth.getCurrentUser().getEmail());
-                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                        startActivity(intent);
-                        finish();
-                    } else {
-                        navigateToMain(role);
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    // ES: Fail-closed: si no se pudo comprobar si el 2FA está activo,
-                    //     no navegar — antes esto dejaba entrar saltándose el 2FA.
-                    // EN: Fail-closed: if the 2FA check couldn't run, don't navigate —
-                    //     this used to let the user in, skipping 2FA.
-                    setLoading(false);
-                    showRetry(() -> check2FA(uid, role));
-                });
-    }
-
     private void navigateToMain(String role) {
         // ES: Rol desconocido/ausente → menor privilegio (cliente), nunca comerciante
         // EN: Unknown/missing role → least privilege (customer), never merchant
         Class<?> dest = "merchant".equals(role) ? MainActivity.class : CustomerHomeActivity.class;
-        Intent intent = new Intent(this, dest);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
-        finish();
+        String uid = auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : null;
+
+        // ES: Candado biométrico local (si el usuario lo activó en este dispositivo)
+        // EN: Local biometric lock (if the user enabled it on this device)
+        BiometricLock.gate(this, uid, new BiometricLock.Callback() {
+            @Override public void onUnlocked() {
+                Intent intent = new Intent(LoginActivity.this, dest);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                finish();
+            }
+            @Override public void onCancelled() {
+                // ES: No se superó el candado — no entrar
+                // EN: Lock not passed — don't enter
+                finishAffinity();
+            }
+        });
     }
 
     private void showRetry(Runnable action) {

@@ -171,6 +171,12 @@ public class CustomerBiometriaActivity extends AppCompatActivity {
         data.put("habilitado", habilitado);
         data.put("tipo", tipoBiometria);
 
+        // ES: Fuente de verdad del candado de entrada = local cifrado (BiometricLock).
+        //     El doc de Firestore queda solo como preferencia visible del usuario.
+        // EN: Source of truth for the entry lock = device-encrypted (BiometricLock).
+        //     The Firestore doc remains only as a user-visible preference.
+        BiometricLock.setEnabled(uid, habilitado);
+
         db.collection("users").document(uid)
             .collection("configuracion").document("biometria")
             .set(data)

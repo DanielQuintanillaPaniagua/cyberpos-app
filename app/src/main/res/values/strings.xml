@@ -264,7 +264,20 @@
     <string name="section_preferences">PREFERENCIAS</string>
     <string name="settings_payment_screen">Pantalla de cobro</string>
     <string name="settings_confirmations">Confirmaciones</string>
-    <string name="settings_2fa">Autenticación 2FA</string>
+    <string name="settings_2fa">Bloqueo biométrico</string>
+
+    <!-- Biometric lock -->
+    <string name="biometric_prompt_title">CyberPOS</string>
+    <string name="biometric_unlock_subtitle">Desbloquea para continuar</string>
+    <string name="biometric_confirm_subtitle">Confirma para activar el bloqueo biométrico</string>
+    <string name="title_biometric_lock">BLOQUEO BIOMÉTRICO</string>
+    <string name="label_biometric_lock">Bloqueo biométrico</string>
+    <string name="label_biometric_enabled">Activado — se pedirá huella al abrir</string>
+    <string name="label_biometric_disabled">Desactivado</string>
+    <string name="info_biometric_lock">Al abrir la app se pedirá tu huella o rostro. Se verifica con el sistema Android y no sale de este dispositivo.</string>
+    <string name="error_biometric_no_hardware">Este dispositivo no tiene sensor biométrico.</string>
+    <string name="error_biometric_none_enrolled">No hay huella ni rostro registrados. Configúralos en los ajustes del sistema.</string>
+    <string name="error_biometric_unavailable">No es posible usar biometría en este dispositivo.</string>
     <string name="settings_linked_devices">Dispositivos vinculados</string>
     <string name="section_support">SOPORTE</string>
     <string name="settings_help">Ayuda</string>
